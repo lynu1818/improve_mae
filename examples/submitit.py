@@ -14,6 +14,7 @@ import uuid
 
 import examples.train as train
 import submitit
+from pathlib import Path
 
 
 def parse_args():
