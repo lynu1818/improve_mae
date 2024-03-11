@@ -236,6 +236,8 @@ class Hiera(nn.Module, PyTorchModelHubMixin):
         # Do it this way to ensure that the init args are all PoD (for config usage)
         if isinstance(norm_layer, str):
             norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
+        self.input_size = input_size
+        self.num_classes = num_classes
 
         depth = sum(stages)
         self.patch_stride = patch_stride
@@ -348,6 +350,19 @@ class Hiera(nn.Module, PyTorchModelHubMixin):
             return ["pos_embed_spatial", "pos_embed_temporal"]
         else:
             return ["pos_embed"]
+        
+    @torch.jit.ignore
+    def num_layers(self):
+        return len(self.blocks)
+    
+    @torch.jit.ignore
+    def get_layer_id(self, name: str):
+        if name.startswith("pos_embed") or name.startswith("patch_embed"):
+            return 0
+        elif "blocks" in name:
+            return int(name.split(".")[1]) + 1
+        
+        return self.num_layers()
 
     def get_random_mask(self, x: torch.Tensor, mask_ratio: float) -> torch.Tensor:
         """

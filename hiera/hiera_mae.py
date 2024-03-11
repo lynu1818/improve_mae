@@ -11,7 +11,7 @@
 
 
 from functools import partial
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 import math
 import torch
@@ -19,6 +19,7 @@ import torch.nn as nn
 
 from .hiera import Hiera, HieraBlock
 from .hiera_utils import pretrained_model, undo_windowing, conv_nd
+from .hfhub import has_config
 
 
 def apply_fusion_head(head: nn.Module, x: torch.Tensor) -> torch.Tensor:
@@ -39,6 +40,7 @@ def apply_fusion_head(head: nn.Module, x: torch.Tensor) -> torch.Tensor:
 class MaskedAutoencoderHiera(Hiera):
     """Masked Autoencoder with Hiera backbone"""
 
+    @has_config
     def __init__(
         self,
         in_chans: int = 3,
@@ -47,7 +49,7 @@ class MaskedAutoencoderHiera(Hiera):
         decoder_embed_dim: int = 512,
         decoder_depth: int = 8,
         decoder_num_heads: int = 16,
-        norm_layer: nn.Module = partial(nn.LayerNorm, eps=1e-6),
+        norm_layer: Union[str, nn.Module] = "LayerNorm",
         **kwdargs,
     ):
         super().__init__(
@@ -57,6 +59,10 @@ class MaskedAutoencoderHiera(Hiera):
             norm_layer=norm_layer,
             **kwdargs,
         )
+        
+        # Do it this way to ensure that the init args are all PoD (for config usage)
+        if isinstance(norm_layer, str):
+            norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
 
         del self.norm, self.head
         encoder_dim_out = self.blocks[-1].dim_out
