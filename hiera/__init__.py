@@ -18,8 +18,14 @@ from .hiera import (
     hiera_large_16x224,
     hiera_huge_16x224,
 
+    hiera_tiny_224_st_moe_50p,
+    hiera_tiny_224_st_moe_0001,
+    hiera_tiny_224_st_moe_0011_50p,
+
     Hiera,
     HieraBlock,
+    HieraSTMoE,
+    HieraBlockSTMoE,
     MaskUnitAttention,
     Head,
     PatchEmbed,
@@ -39,5 +45,10 @@ from .hiera_mae import (
     mae_hiera_large_16x224,
     mae_hiera_huge_16x224,
 
+    mae_hiera_tiny_224_st_moe_50p,
+    mae_hiera_tiny_224_st_moe_0001,
+    mae_hiera_tiny_224_st_moe_0011_50p,
+
     MaskedAutoencoderHiera,
+    MaskedAutoencoderHieraSTMoE,
 )

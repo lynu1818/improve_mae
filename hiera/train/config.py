@@ -221,8 +221,8 @@ class Augmentations:
 @config
 class Dataset:
 
-    path: str = "./data"
-    type: str = "imagenet"  # "imagenet" or "imagefolder", "imagefolder" should have "train" and "val" subfolders
+    path: str = "/media/public_dataset/ImageNet/ImageNet2012/"
+    type: str = "imagefolder"  # "imagenet" or "imagefolder", "imagefolder" should have "train" and "val" subfolders
     augmentations: Augmentations = Augmentations.supervised()
     num_classes: int = 1000
 
@@ -334,6 +334,10 @@ class TrainArgs:
             "hiera_base_plus_224": { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             "hiera_large_224":     { "lr": 1e-3, "epochs":  50, "drop_path": 0.1, "layer_decay": 0.85 },
             "hiera_huge_224":      { "lr": 1e-3, "epochs":  50, "drop_path": 0.3, "layer_decay": 0.85 },
+
+            "hiera_tiny_224_st_moe_0001":      { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            "hiera_tiny_224_st_moe_50p":       { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            "hiera_tiny_224_st_moe_0011_50p":  { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
         }
 
         if model not in args:
@@ -362,6 +366,10 @@ class TrainArgs:
             "hiera_base_plus_224": { "drop_path": 0.2 },
             "hiera_large_224":     { "drop_path": 0.2 },
             "hiera_huge_224":      { "drop_path": 0.3 },
+
+            "hiera_tiny_224_st_moe_0001":          { "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
         }
 
         if model not in args:

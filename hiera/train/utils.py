@@ -107,8 +107,11 @@ def make_param_groups(model: torch.nn.Module, weight_decay: float, layer_decay: 
 
 def config(cls):
     """ Decorator that turns a dataclass object into something json serializable."""
-    cls = dataclass(cls)
-
+    try:
+        cls = dataclass(cls)
+    except:
+        print(cls)
+        raise
     def save(self):
         def _save(x):
             if dataclasses.is_dataclass(x):
