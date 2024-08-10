@@ -249,7 +249,7 @@ class Dataset:
 @config
 class TrainArgs:
     precision: str = "16-mixed"  # Recommended: "16-mixed" or "32"
-    log_path: str = "./"         # Directory to save logs+checkpoints to (will save to log_dir/lightning_logs/)
+    log_path: str = "./"         # Directory to save logs+checkpoints to (will save to {log_dir}/)
     resume: str = ""             # Path to a checkpoint to resume training from
 
     # Regularization
@@ -260,7 +260,7 @@ class TrainArgs:
     layer_decay: float = 1.0  # Layer-wise decay: 1.0 means no decay, 0.0 means no learning
     drop_path: float = 0.1    # Probability of dropping a path
 
-    batch_size: int = 64      # TOTAL batch size across _all_ gpus
+    batch_size: int = 128      # TOTAL batch size across _all_ gpus
     num_workers: int = 8
 
     # Batch size will be automatically split evenly among gpus*machines and lr will be scaled accordingly
@@ -378,7 +378,7 @@ class TrainArgs:
         return cls(
             weight_decay=0.05,
             layer_decay=1.0,
-            batch_size=64,
+            batch_size=128,
             lr=8e-4,
             lr_batch_size=4096,
             warmup_epochs=40,

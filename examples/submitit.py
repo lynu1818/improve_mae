@@ -63,7 +63,7 @@ class Trainer(object):
         import os
         import submitit
 
-        checkpoint_folder = os.path.join(self.args["train.log_path"], "lightning_logs", "version_0", "checkpoints")
+        checkpoint_folder = os.path.join(self.args["train.log_path"], "version_0", "checkpoints")
         if os.path.exists(checkpoint_folder):
             checkpoint_file = None
             for file in os.listdir(checkpoint_folder):

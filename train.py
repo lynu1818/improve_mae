@@ -14,8 +14,7 @@ import torch
 import argparse
 
 from lightning.pytorch.callbacks import ModelCheckpoint
-
-
+from lightning.pytorch.loggers import WandbLogger
 
 
 def train(model_name: str, config_name: str, train_args: dict = {}):
@@ -33,6 +32,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
             pretrained=True, checkpoint="mae_in1k",
             num_classes=args.dataset.num_classes)
         engine = hiera.train.SupervisedEngine(model, args)
+    wandb_logger = WandbLogger(project=f'Hiera_{config_name}')
 
     trainer = L.Trainer(
         max_epochs=args.epochs,
@@ -45,6 +45,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         strategy="ddp" if args.num_gpus * args.num_machines > 1 else "auto",
 
         default_root_dir=args.log_path,
+        logger=wandb_logger,
         
     )
     trainer.fit(engine, ckpt_path=args.resume if args.resume != "" else None)
