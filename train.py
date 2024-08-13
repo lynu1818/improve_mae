@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
-
+import os
 import hiera
 import hiera.train
 import hiera.train.config as config
@@ -21,19 +21,33 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
     torch.set_float32_matmul_precision('medium')
 
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
-
     if "mae" in config_name:
-        model = getattr(hiera, f"mae_{model_name}")(pretrained=False)
+        model = getattr(hiera, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
         engine = hiera.train.MAEEngine(model, args)
 
     else:
         model = getattr(hiera, model_name)(
             # Temporary, replace with loading from a checkpoint
-            pretrained=True, checkpoint="mae_in1k",
-            num_classes=args.dataset.num_classes)
+            pretrained=False, 
+            custom_ckpt_path=args.custom_ckpt_path, 
+            custom_ckpt_name=args.custom_ckpt_name, 
+            checkpoint=args.custom_ckpt_name,
+            num_classes=args.dataset.num_classes,
+            model_name=model_name,
+        )
         engine = hiera.train.SupervisedEngine(model, args)
-    wandb_logger = WandbLogger(project=f'Hiera_{config_name}')
+    if not os.path.exists(args.log_path):
+        os.makedirs(args.log_path)
+    wandb_logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
 
+    ckpt_callback = ModelCheckpoint(
+        filename='epoch-{epoch}',
+        save_top_k=-1,
+        save_last=True,
+        every_n_epochs=10,
+        dirpath=args.log_path,
+        save_weights_only=True,
+    )
     trainer = L.Trainer(
         max_epochs=args.epochs,
         precision=args.precision,
@@ -46,7 +60,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
 
         default_root_dir=args.log_path,
         logger=wandb_logger,
-        
+        callbacks=[ckpt_callback],
     )
     trainer.fit(engine, ckpt_path=args.resume if args.resume != "" else None)
     trainer.test(engine)

@@ -22,6 +22,10 @@ from .hiera import (
     hiera_tiny_224_st_moe_0001,
     hiera_tiny_224_st_moe_0011_50p,
 
+    hiera_small_224_st_moe_0011_50p,
+    hiera_base_224_st_moe_0011_50p,
+    hiera_base_plus_224_st_moe_0011_50p,
+
     Hiera,
     HieraBlock,
     HieraSTMoE,
@@ -48,6 +52,10 @@ from .hiera_mae import (
     mae_hiera_tiny_224_st_moe_50p,
     mae_hiera_tiny_224_st_moe_0001,
     mae_hiera_tiny_224_st_moe_0011_50p,
+
+    mae_hiera_small_224_st_moe_0011_50p,
+    mae_hiera_base_224_st_moe_0011_50p,
+    mae_hiera_base_plus_224_st_moe_0011_50p,
 
     MaskedAutoencoderHiera,
     MaskedAutoencoderHieraSTMoE,

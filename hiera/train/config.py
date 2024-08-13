@@ -158,7 +158,7 @@ class Augmentations:
                     auto_augment=self.auto_augment,
                     mean=self.mean,
                     std=self.std,
-                    interpolation=transforms.InterpolationMode.BICUBIC,
+                    interpolation='bicubic',
                     re_prob=self.random_erase_prob,
                     re_mode=self.random_erase_mode,
                     re_count=self.random_erase_count,
@@ -221,7 +221,7 @@ class Augmentations:
 @config
 class Dataset:
 
-    path: str = "/media/public_dataset/ImageNet/ImageNet2012/"
+    path: str = "/work/s108061519/data/imagenet/imagenet/"
     type: str = "imagefolder"  # "imagenet" or "imagefolder", "imagefolder" should have "train" and "val" subfolders
     augmentations: Augmentations = Augmentations.supervised()
     num_classes: int = 1000
@@ -251,6 +251,9 @@ class TrainArgs:
     precision: str = "16-mixed"  # Recommended: "16-mixed" or "32"
     log_path: str = "./"         # Directory to save logs+checkpoints to (will save to {log_dir}/)
     resume: str = ""             # Path to a checkpoint to resume training from
+
+    custom_ckpt_path: str = ""         # Path to a checkpoint to load the model from (For fine-tuning)
+    custom_ckpt_name: str = ""         # Name of the model in the checkpoint (For fine-tuning)
 
     # Regularization
     label_smoothing: float = 0.1
@@ -370,6 +373,11 @@ class TrainArgs:
             "hiera_tiny_224_st_moe_0001":          { "drop_path": 0.0 },
             "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
             "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
+
+            "hiera_small_224_st_moe_0011_50p":     { "drop_path": 0.0 },
+            "hiera_base_224_st_moe_0011_50p":      { "drop_path": 0.2 },
+            "hiera_base_plus_224_st_moe_0011_50p": { "drop_path": 0.2 },
+
         }
 
         if model not in args:

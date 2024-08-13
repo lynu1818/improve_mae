@@ -25,13 +25,40 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from collections import OrderedDict
 
-def pretrained_model(checkpoints: Dict[str, str], default: str = None) -> Callable:
+
+def pretrained_model(checkpoints: Dict[str, str], default: str = None,
+                     custom_ckpt_path: str = '', custom_ckpt_name: str = '') -> Callable:
     """ Loads a Hiera model from a pretrained source (if pretrained=True). Use "checkpoint" to specify the checkpoint. """
 
     def inner(model_func: Callable) -> Callable:
-        def model_def(pretrained: bool = False, checkpoint: str = default, strict: bool = True, **kwdargs) -> nn.Module:
-            if pretrained:
+        def model_def(pretrained: bool = False, checkpoint: str = default, strict: bool = True, 
+                      custom_ckpt_path: str = '', custom_ckpt_name: str = '',
+                      **kwdargs) -> nn.Module:
+            if custom_ckpt_path:
+                checkpoints[custom_ckpt_name] = custom_ckpt_path
+                default = custom_ckpt_name
+                state_dict = torch.load(custom_ckpt_path, map_location="cpu")
+
+                # remove "model" prefix from keys
+                new_state_dict = OrderedDict()
+                for k, v in state_dict["state_dict"].items():
+                    if k.startswith("model."):
+                        k = k[6:]
+                    new_state_dict[k] = v
+                state_dict["state_dict"] = new_state_dict
+
+                if "head.projection.weight" in state_dict["state_dict"]:
+                    # Set the number of classes equal to the state_dict only if the user doesn't want to overwrite it
+                    if "num_classes" not in kwdargs:
+                        kwdargs["num_classes"] = state_dict["state_dict"]["head.projection.weight"].shape[0]
+                    # If the user specified a different number of classes, remove the projection weights or else we'll error out
+                    elif kwdargs["num_classes"] != state_dict["state_dict"]["head.projection.weight"].shape[0]:
+                        del state_dict["state_dict"]["head.projection.weight"]
+                        del state_dict["state_dict"]["head.projection.bias"]
+
+            elif pretrained:
                 if checkpoints is None:
                     raise RuntimeError("This model currently doesn't have pretrained weights available.")
                 elif checkpoint is None:
@@ -51,13 +78,20 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None) -> Callab
                         del state_dict["model_state"]["head.projection.bias"]
 
             model = model_func(**kwdargs)
-            if pretrained:
+
+            if custom_ckpt_path:
+                if "decoder_pos_embed" in state_dict["state_dict"] and not hasattr(model, "decoder_pos_embed"):
+                    strict = False
+
+                model.load_state_dict(state_dict["state_dict"], strict=strict)
+                print('Successfully loaded model from checkpoint')
+            elif pretrained:
                 # Disable being strict when trying to load a encoder-decoder model into an encoder-only model
                 if "decoder_pos_embed" in state_dict["model_state"] and not hasattr(model, "decoder_pos_embed"):
                     strict = False
 
                 model.load_state_dict(state_dict["model_state"], strict=strict)
-            
+
             return model
 
         # Keep some metadata so we can do things that require looping through all available models

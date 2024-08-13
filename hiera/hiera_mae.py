@@ -664,7 +664,7 @@ def mae_hiera_huge_16x224(**kwdargs):
     )
 
 # Image Models with ST MoE
-@pretrained_model({}, default=None)
+@pretrained_model({})
 def mae_hiera_tiny_224_st_moe_50p(**kwargs):
     moe_stages = (
         False,
@@ -679,7 +679,7 @@ def mae_hiera_tiny_224_st_moe_50p(**kwargs):
         embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
     )
 
-@pretrained_model({}, default=None)
+@pretrained_model({})
 def mae_hiera_tiny_224_st_moe_0001(**kwargs):
     moe_stages = (
         False,
@@ -693,7 +693,7 @@ def mae_hiera_tiny_224_st_moe_0001(**kwargs):
         embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
     )
 
-@pretrained_model({}, default=None)
+@pretrained_model({})
 def mae_hiera_tiny_224_st_moe_0011_50p(**kwargs):
     moe_stages = (
         False,
@@ -707,3 +707,48 @@ def mae_hiera_tiny_224_st_moe_0011_50p(**kwargs):
     return MaskedAutoencoderHieraSTMoE(
         embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
    )
+
+@pretrained_model({})
+def mae_hiera_small_224_st_moe_0011_50p(**kwargs):
+    moe_stages = (
+        False,
+        False, False,
+        False, False, False, False, False, False, True, True, True, True, True, 
+        False, True
+    )
+    stages = (1, 2, 11, 2)
+    assert len(moe_stages) == sum(stages)
+    return MaskedAutoencoderHieraSTMoE(
+        embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
+   )
+
+
+@pretrained_model({})
+def mae_hiera_base_224_st_moe_0011_50p(**kwargs):
+    moe_stages = (
+        False,
+        False, False, True,
+        False, False, False, False, False, False, False, False,
+        True,  True,  True,  True,  True,  True,  True,  True, 
+        False, False, True
+    )
+    stages = (2, 3, 16, 3)
+    assert len(moe_stages) == sum(stages)
+    return MaskedAutoencoderHieraSTMoE(
+        embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
+    )
+
+@pretrained_model({})
+def mae_hiera_base_plus_224_st_moe_0011_50p(**kwargs):
+    moe_stages = (
+        False,
+        False, False, True,
+        False, False, False, False, False, False, False, False,
+        True,  True,  True,  True,  True,  True,  True,  True, 
+        False, False, True
+    )
+    stages = (2, 3, 16, 3)
+    assert len(moe_stages) == sum(stages)
+    return MaskedAutoencoderHieraSTMoE(
+        embed_dim=112, num_heads=2, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
+    )

@@ -12,3 +12,7 @@ MNIST/
 .old/
 logs/
 wandb/
+*.pth
+*.ckpt
+
+legacy_ckpt/

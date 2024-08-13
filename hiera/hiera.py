@@ -281,6 +281,7 @@ class Hiera(nn.Module, PyTorchModelHubMixin):
     @has_config
     def __init__(
         self,
+        model_name: str,
         input_size: Tuple[int, ...] = (224, 224),
         in_chans: int = 3,
         embed_dim: int = 96,  # initial embed dim
@@ -305,7 +306,7 @@ class Hiera(nn.Module, PyTorchModelHubMixin):
         sep_pos_embed: bool = False,
     ):
         super().__init__()
-
+        self.model_name = model_name
         # Do it this way to ensure that the init args are all PoD (for config usage)
         if isinstance(norm_layer, str):
             norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
@@ -532,6 +533,7 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
     @has_config
     def __init__(
         self,
+        model_name: str,
         input_size: Tuple[int, ...] = (224, 224),
         in_chans: int = 3,
         embed_dim: int = 96,  # initial embed dim
@@ -558,7 +560,7 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
         moe_stages: Tuple[bool, ...] = None,
     ):
         super().__init__()
-
+        self.model_name = model_name
         # Do it this way to ensure that the init args are all PoD (for config usage)
         if isinstance(norm_layer, str):
             norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
@@ -892,6 +894,7 @@ def hiera_huge_16x224(**kwdargs):
 
 
 # ST-MoE models
+@pretrained_model({})
 def hiera_tiny_224_st_moe_0001(**kwdargs):
     moe_stages = (
         False,
@@ -903,7 +906,7 @@ def hiera_tiny_224_st_moe_0001(**kwdargs):
     assert len(moe_stages) == sum(stages)
     return HieraSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
 
-@pretrained_model({}, default=None)
+@pretrained_model({})
 def hiera_tiny_224_st_moe_50p(**kwdargs):
     moe_stages = (
         False,
@@ -916,6 +919,7 @@ def hiera_tiny_224_st_moe_50p(**kwdargs):
 
     return HieraSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
 
+@pretrained_model({})
 def hiera_tiny_224_st_moe_0011_50p(**kwdargs):
     """
     50 % of layer use moe in each stages
@@ -935,3 +939,42 @@ def hiera_tiny_224_st_moe_0011_50p(**kwdargs):
     stages = (1, 2, 7, 2)
     assert len(moe_stages) == sum(stages)
     return HieraSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
+
+@pretrained_model({})
+def hiera_small_224_st_moe_0011_50p(**kwdargs):
+
+    moe_stages = (
+        False,
+        False, False,
+        False, False, False, False, False, False, True, True, True, True, True, 
+        False, True
+    )
+    stages = (1, 2, 11, 2)
+    assert len(moe_stages) == sum(stages)
+    return HieraSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
+
+@pretrained_model({})
+def hiera_base_224_st_moe_0011_50p(**kwdargs):
+    moe_stages = (
+        False,
+        False, False, True,
+        False, False, False, False, False, False, False, False,
+        True,  True,  True,  True,  True,  True,  True,  True, 
+        False, False, True
+    )
+    stages = (2, 3, 16, 3)
+    assert len(moe_stages) == sum(stages)
+    return HieraSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
+
+@pretrained_model({})
+def hiera_base_plus_224_st_moe_0011_50p(**kwdargs):
+    moe_stages = (
+        False,
+        False, False, True,
+        False, False, False, False, False, False, False, False,
+        True,  True,  True,  True,  True,  True,  True,  True, 
+        False, False, True
+    )
+    stages = (2, 3, 16, 3)
+    assert len(moe_stages) == sum(stages)
+    return HieraSTMoE(embed_dim=112, num_heads=2, stages=stages, moe_stages=moe_stages, **kwdargs)
