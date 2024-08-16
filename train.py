@@ -16,6 +16,7 @@ import argparse
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
+import time
 
 def train(model_name: str, config_name: str, train_args: dict = {}):
     torch.set_float32_matmul_precision('medium')
@@ -24,7 +25,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
     if "mae" in config_name:
         model = getattr(hiera, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
         engine = hiera.train.MAEEngine(model, args)
-
+        
     else:
         model = getattr(hiera, model_name)(
             # Temporary, replace with loading from a checkpoint
@@ -36,6 +37,8 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
             model_name=model_name,
         )
         engine = hiera.train.SupervisedEngine(model, args)
+
+    start = time.time()
     if not os.path.exists(args.log_path):
         os.makedirs(args.log_path)
     wandb_logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
@@ -48,6 +51,8 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         dirpath=args.log_path,
         save_weights_only=True,
     )
+    profiler = L.pytorch.profilers.AdvancedProfiler(dirpath=args.log_path)
+
     trainer = L.Trainer(
         max_epochs=args.epochs,
         precision=args.precision,
@@ -61,7 +66,9 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         default_root_dir=args.log_path,
         logger=wandb_logger,
         callbacks=[ckpt_callback],
+        profiler=profiler,
     )
+
     trainer.fit(engine, ckpt_path=args.resume if args.resume != "" else None)
     trainer.test(engine)
 

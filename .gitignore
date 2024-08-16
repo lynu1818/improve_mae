@@ -16,3 +16,4 @@ wandb/
 *.ckpt
 
 legacy_ckpt/
+flops/

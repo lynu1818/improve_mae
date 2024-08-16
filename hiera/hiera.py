@@ -956,8 +956,8 @@ def hiera_small_224_st_moe_0011_50p(**kwdargs):
 @pretrained_model({})
 def hiera_base_224_st_moe_0011_50p(**kwdargs):
     moe_stages = (
-        False,
-        False, False, True,
+        False, False,
+        False, False, False,
         False, False, False, False, False, False, False, False,
         True,  True,  True,  True,  True,  True,  True,  True, 
         False, False, True
@@ -969,8 +969,8 @@ def hiera_base_224_st_moe_0011_50p(**kwdargs):
 @pretrained_model({})
 def hiera_base_plus_224_st_moe_0011_50p(**kwdargs):
     moe_stages = (
-        False,
-        False, False, True,
+        False, False,
+        False, False, False,
         False, False, False, False, False, False, False, False,
         True,  True,  True,  True,  True,  True,  True,  True, 
         False, False, True
