@@ -124,6 +124,8 @@ class HieraBlock(nn.Module):
         window_size: int = 0,
         use_mask_unit_attn: bool = False,
         num_experts = None, # for compatibility with ST-MoE
+        mlp_dropout: float = 0.,
+        expert_dropout = None, # for compatibility with ST-MoE
     ):
         super().__init__()
 
@@ -136,7 +138,7 @@ class HieraBlock(nn.Module):
         )
 
         self.norm2 = norm_layer(dim_out)
-        self.mlp = Mlp(dim_out, int(dim_out * mlp_ratio), act_layer=act_layer)
+        self.mlp = Mlp(dim_out, int(dim_out * mlp_ratio), act_layer=act_layer, drop=mlp_dropout)
 
         self.drop_path = DropPath(drop_path) if drop_path > 0 else nn.Identity()
         if dim != dim_out:
@@ -168,6 +170,8 @@ class HieraBlockSTMoE(nn.Module):
         window_size: int = 0,
         use_mask_unit_attn: bool = False,
         num_experts: int = 16,
+        mlp_dropout = None, # for compatibility with Standard HieraBlock
+        expert_dropout: float = 0.0,
     ):
         super().__init__()
 
@@ -191,6 +195,7 @@ class HieraBlockSTMoE(nn.Module):
             capacity_factor_eval = 2.,      # capacity_factor_* should be set to a value >=1
             balance_loss_coef = 1e-2,       # multiplier on the auxiliary expert balancing auxiliary loss
             router_z_loss_coef = 1e-3,      # loss weight for router z-loss
+            expert_dropout = expert_dropout,    # dropout rate for the experts
         )
         self.moe = SparseMoEBlock(
             moe,
@@ -304,6 +309,8 @@ class Hiera(nn.Module, PyTorchModelHubMixin):
         head_dropout: float = 0.0,
         head_init_scale: float = 0.001,
         sep_pos_embed: bool = False,
+        mlp_dropout: float = 0.0,
+        expert_dropout = None, # for compatibility with ST-MoE
     ):
         super().__init__()
         self.model_name = model_name
@@ -391,6 +398,7 @@ class Hiera(nn.Module, PyTorchModelHubMixin):
                 q_stride=(flat_q_stride if i in q_pool_blocks else 1),
                 window_size=flat_mu_size,
                 use_mask_unit_attn=use_mask_unit_attn,
+                mlp_dropout=mlp_dropout,
             )
 
             embed_dim = dim_out
@@ -558,6 +566,8 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
         sep_pos_embed: bool = False,
         num_experts: int = 16,
         moe_stages: Tuple[bool, ...] = None,
+        mlp_dropout: float = 0.0,
+        expert_dropout: float = 0.0,
     ):
         super().__init__()
         self.model_name = model_name
@@ -650,6 +660,8 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
                 window_size=flat_mu_size,
                 use_mask_unit_attn=use_mask_unit_attn,
                 num_experts=num_experts,
+                mlp_dropout=mlp_dropout,
+                expert_dropout=expert_dropout,
             )
 
             embed_dim = dim_out
@@ -938,6 +950,7 @@ def hiera_tiny_224_st_moe_0011_50p(**kwdargs):
     )
     stages = (1, 2, 7, 2)
     assert len(moe_stages) == sum(stages)
+
     return HieraSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
 
 @pretrained_model({})
@@ -978,3 +991,13 @@ def hiera_base_plus_224_st_moe_0011_50p(**kwdargs):
     stages = (2, 3, 16, 3)
     assert len(moe_stages) == sum(stages)
     return HieraSTMoE(embed_dim=112, num_heads=2, stages=stages, moe_stages=moe_stages, **kwdargs)
+
+
+@pretrained_model({}, default=None)
+def hiera_large_224_st_moe_0011_50p(**kwdargs):
+    moe_stages = ()
+    stages = (2, 6, 36, 4)
+    for stage in stages:
+        moe_stages += (False,) * math.ceil(stage/2) + (True,) * math.floor(stage/2)
+    assert len(moe_stages) == sum(stages)
+    return HieraSTMoE(embed_dim=144, num_heads=2, stages=stages, moe_stages=moe_stages, **kwdargs)

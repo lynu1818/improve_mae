@@ -19,10 +19,7 @@ import os
 from .utils import config, field
 
 
-
-
-
-
+from flash.core.optimizers import LAMB
 
 
 
@@ -51,7 +48,10 @@ class Optimizer:
     def sgd(cls, momentum: float = 0.9):
         return cls("sgd", momentum=momentum, beta1=0, beta2=0)
     
-
+    @classmethod
+    def lamb(cls):
+        return cls("lamb", beta1=0.9, beta2=0.999)
+    
     def __call__(self, params, lr: float, weight_decay: float):
         if self.type == "adamw":
             return torch.optim.AdamW(
@@ -69,6 +69,8 @@ class Optimizer:
             )
         elif self.type == "sgd":
             return torch.optim.SGD(params, lr=lr, momentum=self.momentum, weight_decay=weight_decay)
+        elif self.type == 'lamb':
+            return LAMB(params, lr=lr, betas=(self.beta1, self.beta2), weight_decay=weight_decay)
         else:
             raise ValueError(f"Unknown optimizer type {self.type}.")
 
@@ -260,8 +262,10 @@ class TrainArgs:
     weight_decay: float = 0.05
 
     # Important regularization parameters
-    layer_decay: float = 1.0  # Layer-wise decay: 1.0 means no decay, 0.0 means no learning
-    drop_path: float = 0.1    # Probability of dropping a path
+    layer_decay: float = 1.0          # Layer-wise decay: 1.0 means no decay, 0.0 means no learning
+    drop_path: float = 0.1            # Probability of dropping a path
+    mlp_dropout: float = 0.0          # Dropout rate for MLPs
+    expert_dropout: float = 0.0  # [ADDED] Dropout rate for experts. Switch Transformers.
 
     batch_size: int = 128      # TOTAL batch size across _all_ gpus
     num_workers: int = 8
@@ -338,14 +342,17 @@ class TrainArgs:
             "hiera_large_224":     { "lr": 1e-3, "epochs":  50, "drop_path": 0.1, "layer_decay": 0.85 },
             "hiera_huge_224":      { "lr": 1e-3, "epochs":  50, "drop_path": 0.3, "layer_decay": 0.85 },
 
-            "hiera_tiny_224_st_moe_0001":      { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
-            "hiera_tiny_224_st_moe_50p":       { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
-            "hiera_tiny_224_st_moe_0011_50p":  { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            "hiera_tiny_224_st_moe_0001":          { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            "hiera_tiny_224_st_moe_50p":           { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            "hiera_tiny_224_st_moe_0011_50p":      { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            
+            "hiera_base_plus_224_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
+            "hiera_large_st_moe_0011_50p":         { "lr": 1e-3, "epochs":  50, "drop_path": 0.1, "layer_decay": 0.85 },
         }
 
         if model not in args:
             raise ValueError(f"Unknown model {model} for finetuning.")
-        
+
         return cls(
             batch_size=16,
             label_smoothing=0.1,
@@ -377,6 +384,7 @@ class TrainArgs:
             "hiera_small_224_st_moe_0011_50p":     { "drop_path": 0.0 },
             "hiera_base_224_st_moe_0011_50p":      { "drop_path": 0.2 },
             "hiera_base_plus_224_st_moe_0011_50p": { "drop_path": 0.2 },
+            "hiera_large_224_st_moe_0011_50p":     { "drop_path": 0.2 },
 
         }
 
@@ -391,7 +399,7 @@ class TrainArgs:
             lr_batch_size=4096,
             warmup_epochs=40,
             mask_ratio=0.6,
-            epochs=1600,
+            epochs=400,
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),

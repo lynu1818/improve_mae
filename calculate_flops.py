@@ -9,7 +9,7 @@ parser.add_argument('--package', default='fvcore', choices=['calflops', 'fvcore'
 args = parser.parse_args()
 
 model = getattr(hiera, args.model_name)(pretrained=False, model_name=args.model_name)
-
+print(args.model_name)
 if args.package == 'calflops':
     from calflops import calculate_flops
     input_shape = (1, 3, 224, 224)
@@ -23,6 +23,7 @@ elif args.package == 'fvcore':
     from fvcore.nn import FlopCountAnalysis, flop_count_table
     input_ = torch.randn(1, 3, 224, 224)
     flops = FlopCountAnalysis(model, input_)
+    print(f'-------{args.model_name}----')
     print(flops.total())
     print(flop_count_table(flops))
     with open(f'flops/flops-{args.model_name}.txt', 'w') as f:

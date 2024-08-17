@@ -752,3 +752,15 @@ def mae_hiera_base_plus_224_st_moe_0011_50p(**kwargs):
     return MaskedAutoencoderHieraSTMoE(
         embed_dim=112, num_heads=2, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
     )
+
+
+@pretrained_model({}, default=None)
+def mae_hiera_large_224_st_moe_0011_50p(**kwargs):
+    moe_stages = ()
+    stages = (2, 6, 36, 4)
+    for stage in stages:
+        moe_stages += (False,) * math.ceil(stage/2) + (True,) * math.floor(stage/2)
+    assert len(moe_stages) == sum(stages)
+    return MaskedAutoencoderHieraSTMoE(
+        embed_dim=144, num_heads=2, stages=stages, moe_stages=moe_stages, q_pool=2, **kwargs,
+    )
