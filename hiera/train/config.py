@@ -223,7 +223,7 @@ class Augmentations:
 @config
 class Dataset:
 
-    path: str = "/work/s108061519/data/imagenet/imagenet/"
+    path: str = "/mnt/home/andyqmongo/data/imagenet/imagenet"
     type: str = "imagefolder"  # "imagenet" or "imagefolder", "imagefolder" should have "train" and "val" subfolders
     augmentations: Augmentations = Augmentations.supervised()
     num_classes: int = 1000
@@ -406,6 +406,46 @@ class TrainArgs:
             warmup_epochs=40,
             mask_ratio=0.6,
             epochs=400,
+
+            dataset=Dataset(augmentations = Augmentations.mae()),
+            optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
+            
+            **args[model]
+        )
+
+    @classmethod
+    def in21k_mae(cls, model: str):
+        args = {
+            "hiera_tiny_224":      { "drop_path": 0.0 },
+            "hiera_small_224":     { "drop_path": 0.0 },
+            "hiera_base_224":      { "drop_path": 0.2 },
+            "hiera_base_plus_224": { "drop_path": 0.2 },
+            "hiera_large_224":     { "drop_path": 0.2 },
+            "hiera_huge_224":      { "drop_path": 0.3 },
+
+            "hiera_tiny_224_st_moe_0001":          { "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
+
+            "hiera_small_224_st_moe_0011_50p":     { "drop_path": 0.0 },
+            "hiera_base_224_st_moe_0011_50p":      { "drop_path": 0.2 },
+            "hiera_base_plus_224_st_moe_0011_50p": { "drop_path": 0.2 },
+            "hiera_large_224_st_moe_0011_50p":     { "drop_path": 0.2 },
+
+        }
+
+        if model not in args:
+            raise ValueError(f"Unknown model {model} for MAE training.")
+
+        return cls(
+            weight_decay=0.05,
+            layer_decay=1.0,
+            batch_size=4096,
+            lr=8e-4,
+            lr_batch_size=4096,
+            warmup_epochs=40,
+            mask_ratio=0.6,
+            epochs=1600,
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),

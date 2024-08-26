@@ -44,6 +44,9 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
 
     if not os.path.exists(args.log_path):
         os.makedirs(args.log_path)
+    save_whole_path = os.path.join(args.log_path, 'save_whole')
+    if not os.path.exists(save_whole_path):
+        os.makedirs(save_whole_path)
     wandb_logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
 
     ckpt_callback = ModelCheckpoint(
@@ -54,7 +57,15 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         dirpath=args.log_path,
         save_weights_only=True,
     )
-    profiler = L.pytorch.profilers.AdvancedProfiler(dirpath=args.log_path)
+    ckpt_callback_save_whole = ModelCheckpoint(
+        filename='save_all-{epoch}',
+        save_top_k=1,
+        save_last=True,
+        dirpath=save_whole_path,
+        save_weights_only=False,
+    )
+
+    #profiler = L.pytorch.profilers.AdvancedProfiler(dirpath=args.log_path)
 
     trainer = L.Trainer(
         max_epochs=args.epochs,
@@ -68,8 +79,8 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
 
         default_root_dir=args.log_path,
         logger=wandb_logger,
-        callbacks=[ckpt_callback],
-        profiler=profiler,
+        callbacks=[ckpt_callback, ckpt_callback_save_whole],
+        profiler='simple',
     )
 
     trainer.fit(engine, ckpt_path=args.resume if args.resume != "" else None)
