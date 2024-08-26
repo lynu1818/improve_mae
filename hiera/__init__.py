@@ -14,6 +14,7 @@ from .hiera import (
     hiera_huge_224,
 
     hiera_tiny_512,
+    hiera_base_plus_512,
 
     hiera_base_16x224,
     hiera_base_plus_16x224,
@@ -29,6 +30,9 @@ from .hiera import (
     hiera_base_224_st_moe_0011_50p,
     hiera_base_plus_224_st_moe_0011_50p,
     hiera_large_224_st_moe_0011_50p,
+
+    hiera_tiny_512_st_moe_0011_50p,
+    hiera_base_plus_512_st_moe_0011_50p,
 
     Hiera,
     HieraBlock,
@@ -49,6 +53,7 @@ from .hiera_mae import (
     mae_hiera_huge_224,
 
     mae_hiera_tiny_512,
+    mae_hiera_base_plus_512,
 
     mae_hiera_base_16x224,
     mae_hiera_base_plus_16x224,
@@ -63,6 +68,9 @@ from .hiera_mae import (
     mae_hiera_base_224_st_moe_0011_50p,
     mae_hiera_base_plus_224_st_moe_0011_50p,
     mae_hiera_large_224_st_moe_0011_50p,
+
+    mae_hiera_tiny_512_st_moe_0011_50p,
+    mae_hiera_base_plus_512_st_moe_0011_50p,
 
     MaskedAutoencoderHiera,
     MaskedAutoencoderHieraSTMoE,

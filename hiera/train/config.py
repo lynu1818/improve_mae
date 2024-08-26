@@ -342,13 +342,18 @@ class TrainArgs:
             "hiera_large_224":     { "lr": 1e-3, "epochs":  50, "drop_path": 0.1, "layer_decay": 0.85 },
             "hiera_huge_224":      { "lr": 1e-3, "epochs":  50, "drop_path": 0.3, "layer_decay": 0.85 },
 
-            "hiera_tiny_512":                      { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
             "hiera_tiny_224_st_moe_0001":          { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
             "hiera_tiny_224_st_moe_50p":           { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
             "hiera_tiny_224_st_moe_0011_50p":      { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
             
             "hiera_base_plus_224_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             "hiera_large_st_moe_0011_50p":         { "lr": 1e-3, "epochs":  50, "drop_path": 0.1, "layer_decay": 0.85 },
+
+
+            "hiera_tiny_512":                      { "lr": 2e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.65 },
+            "hiera_tiny_512_st_moe_0011_50p":      { "lr": 2e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.65 },
+            "hiera_base_plus_512":                 { "lr": 1e-3, "epochs": 100, "drop_path": 0.3, "layer_decay": 0.7  },
+            "hiera_base_plus_512_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.3, "layer_decay": 0.7  },
         }
 
         if model not in args:
@@ -382,7 +387,11 @@ class TrainArgs:
             "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
             "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
 
-            "hiera_tiny_512":      { "drop_path": 0.0 },
+            "hiera_tiny_512":                      { "drop_path": 0.1 },
+            "hiera_tiny_512_st_moe_0011_50p":      { "drop_path": 0.1 },
+            "hiera_base_plus_512":                 { "drop_path": 0.3 },
+            "hiera_base_plus_512_st_moe_0011_50p": { "drop_path": 0.3 },
+
         }
 
         if model not in args:
