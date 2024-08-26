@@ -764,3 +764,9 @@ def mae_hiera_large_224_st_moe_0011_50p(**kwargs):
     return MaskedAutoencoderHieraSTMoE(
         embed_dim=144, num_heads=2, stages=stages, moe_stages=moe_stages, q_pool=2, **kwargs,
     )
+
+@pretrained_model({}, default=None)
+def mae_hiera_tiny_512(**kwargs):
+    return MaskedAutoencoderHiera(
+        embed_dim=96, num_heads=1, stages=(1, 2, 7, 2), q_pool=2, input_size=(512, 512), **kwargs,
+    )

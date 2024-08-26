@@ -1001,3 +1001,7 @@ def hiera_large_224_st_moe_0011_50p(**kwdargs):
         moe_stages += (False,) * math.ceil(stage/2) + (True,) * math.floor(stage/2)
     assert len(moe_stages) == sum(stages)
     return HieraSTMoE(embed_dim=144, num_heads=2, stages=stages, moe_stages=moe_stages, **kwdargs)
+
+@pretrained_model({}, default=None)
+def hiera_tiny_512(**kwdargs):
+    return Hiera(embed_dim=96, num_heads=1, stages=(1, 2, 7, 2), input_size=(512, 512), **kwdargs)

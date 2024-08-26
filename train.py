@@ -16,8 +16,10 @@ import argparse
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
+import time
 
 def train(model_name: str, config_name: str, train_args: dict = {}):
+    start = time.time()
     torch.set_float32_matmul_precision('medium')
 
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
@@ -81,7 +83,7 @@ def make_arg_parser():
 
     parser.add_argument("--model", required=True, type=str, help="Name of the model, e.g. 'hiera_tiny_224'. See hiera.py for available models.")
     parser.add_argument("--config", required=True, type=str, help="Name of the config, e.g. 'in1k_finetune'. See hiera/train/config.py (TrainArgs) for available configs.")
-
+    parser.add_argument('--log-wandb', default=False, action='store_true', help='Log to wandb')
     config.TrainArgs.parse(parser, "train.")
 
     return parser
