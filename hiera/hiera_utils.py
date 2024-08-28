@@ -43,12 +43,16 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
 
                 # remove "model" prefix from keys
                 new_state_dict = OrderedDict()
-                for k, v in state_dict["state_dict"].items():
-                    if k.startswith("model."):
-                        k = k[6:]
-                    new_state_dict[k] = v
-                state_dict["state_dict"] = new_state_dict
-
+                if 'state_dict' in state_dict:
+                    for k, v in state_dict["state_dict"].items():
+                        if k.startswith("model."):
+                            k = k[6:]
+                        new_state_dict[k] = v
+                    state_dict["state_dict"] = new_state_dict
+                elif 'model_state' in state_dict:
+                    state_dict["state_dict"] = state_dict["model_state"]
+                else:
+                    raise RuntimeError("Invalid checkpoint format. Must have 'state_dict' or 'model_state' key.")
                 if "head.projection.weight" in state_dict["state_dict"]:
                     # Set the number of classes equal to the state_dict only if the user doesn't want to overwrite it
                     if "num_classes" not in kwdargs:

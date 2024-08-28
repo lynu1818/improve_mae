@@ -778,7 +778,7 @@ def mae_hiera_base_plus_512(**kwargs):
     )
 
 @pretrained_model({})
-def mae_hiera_tiny_224_st_moe_0011_50p(**kwargs):
+def mae_hiera_tiny_512_st_moe_0011_50p(**kwargs):
     moe_stages = (
         False,
         False, False,

@@ -405,7 +405,7 @@ class TrainArgs:
             lr_batch_size=4096,
             warmup_epochs=40,
             mask_ratio=0.6,
-            epochs=400,
+            epochs=1600,
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),

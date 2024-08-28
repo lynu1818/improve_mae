@@ -16,18 +16,19 @@ import argparse
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
-import time
 
 def train(model_name: str, config_name: str, train_args: dict = {}):
-    start = time.time()
-    torch.set_float32_matmul_precision('medium')
-
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
+    if not os.path.exists(args.log_path):
+        os.makedirs(args.log_path)
+    save_whole_path = os.path.join(args.log_path, 'save_whole')
+    if not os.path.exists(save_whole_path):
+        os.makedirs(save_whole_path)
 
+    torch.set_float32_matmul_precision('medium')
     if "mae" in config_name:
         model = getattr(hiera, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
         engine = hiera.train.MAEEngine(model, args)
-        
     else:
         model = getattr(hiera, model_name)(
             # Temporary, replace with loading from a checkpoint
@@ -42,11 +43,6 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         )
         engine = hiera.train.SupervisedEngine(model, args)
 
-    if not os.path.exists(args.log_path):
-        os.makedirs(args.log_path)
-    save_whole_path = os.path.join(args.log_path, 'save_whole')
-    if not os.path.exists(save_whole_path):
-        os.makedirs(save_whole_path)
     wandb_logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
 
     ckpt_callback = ModelCheckpoint(
