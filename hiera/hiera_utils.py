@@ -25,6 +25,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torchvision.models.vision_transformer import interpolate_embeddings
+
 from collections import OrderedDict
 
 
@@ -53,6 +55,8 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
                     state_dict["state_dict"] = state_dict["model_state"]
                 else:
                     raise RuntimeError("Invalid checkpoint format. Must have 'state_dict' or 'model_state' key.")
+                
+    
                 if "head.projection.weight" in state_dict["state_dict"]:
                     # Set the number of classes equal to the state_dict only if the user doesn't want to overwrite it
                     if "num_classes" not in kwdargs:
@@ -61,6 +65,7 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
                     elif kwdargs["num_classes"] != state_dict["state_dict"]["head.projection.weight"].shape[0]:
                         del state_dict["state_dict"]["head.projection.weight"]
                         del state_dict["state_dict"]["head.projection.bias"]
+                del new_state_dict
 
             elif pretrained:
                 if checkpoints is None:
@@ -86,9 +91,48 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
             if custom_ckpt_path:
                 if "decoder_pos_embed" in state_dict["state_dict"] and not hasattr(model, "decoder_pos_embed"):
                     strict = False
+                # Interpolation for positional embeddings
+                # Modified from torchvision.models.vision_transformer.interpolate_embeddings
+                # https://pytorch.org/vision/0.12/_modules/torchvision/models/vision_transformer.html
+                if model.pos_embed.shape[1] != state_dict["state_dict"]["pos_embed"].shape[1]:
+                    print("Interpolating positional embeddings")
+                    pos_embed = state_dict["state_dict"]["pos_embed"]
+                    n, seq_length, hidden_dim = pos_embed.shape
+                    if n!=1:
+                        raise ValueError(f"Unexpected position embedding shape: {pos_embed.shape}")
+                    new_seq_length = model.pos_embed.shape[1]
 
+                    # (0, seq_length, hidden_dim) -> (0, hidden_dim, seq_length)
+                    pos_embed = pos_embed.permute(0, 2, 1)
+                    seq_length_1d = int(math.sqrt(seq_length))
+                    torch._assert(seq_length_1d * seq_length_1d == seq_length, "seq_length is not a perfect square!")
+
+                    # (1, hidden_dim, seq_length) -> (1, hidden_dim, seq_l_1d, seq_l_1d)
+                    pos_embed = pos_embed.reshape(1, hidden_dim, seq_length_1d, seq_length_1d)
+
+                    new_seq_length_1d = int(math.sqrt(new_seq_length))
+                    torch._assert(new_seq_length_1d * new_seq_length_1d == new_seq_length, "new_seq_length is not a perfect square!")
+
+                    # Perform interpolation.
+                    new_pos_embedding_img = F.interpolate(
+                        pos_embed,
+                        size=new_seq_length_1d,
+                        mode="bicubic",
+                        align_corners=True,
+                    )
+
+                    # (1, hidden_dim, new_seq_l_1d, new_seq_l_1d) -> (1, hidden_dim, new_seq_length)
+                    new_pos_embedding_img = new_pos_embedding_img.reshape(1, hidden_dim, new_seq_length)
+
+                    # (1, hidden_dim, new_seq_length) -> (1, new_seq_length, hidden_dim)
+                    new_pos_embedding_img = new_pos_embedding_img.permute(0, 2, 1)
+                    state_dict["state_dict"]["pos_embed"] = new_pos_embedding_img
+                    assert model.pos_embed.shape == new_pos_embedding_img.shape
+                
                 model.load_state_dict(state_dict["state_dict"], strict=strict)
                 print('Successfully loaded model from checkpoint')
+                del state_dict
+
             elif pretrained:
                 # Disable being strict when trying to load a encoder-decoder model into an encoder-only model
                 if "decoder_pos_embed" in state_dict["model_state"] and not hasattr(model, "decoder_pos_embed"):
@@ -96,6 +140,7 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
 
                 model.load_state_dict(state_dict["model_state"], strict=strict)
 
+            torch.cuda.empty_cache()
             return model
 
         # Keep some metadata so we can do things that require looping through all available models

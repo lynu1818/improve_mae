@@ -79,6 +79,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         profiler='simple',
     )
 
+    torch.cuda.empty_cache()
     trainer.fit(engine, ckpt_path=args.resume if args.resume != "" else None)
     trainer.test(engine)
 

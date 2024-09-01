@@ -77,9 +77,9 @@ class SupervisedEngine(L.LightningModule):
 
         acc1, acc5 = accuracy(logits, y, topk=(1, 5))
 
-        self.log(f"{name}_loss", loss)
-        self.log(f"{name}_acc1", acc1)
-        self.log(f"{name}_acc5", acc5)
+        self.log(f"{name}_loss", loss, sync_dist=True)
+        self.log(f"{name}_acc1", acc1, sync_dist=True)
+        self.log(f"{name}_acc5", acc5, sync_dist=True)
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         x, y = batch
