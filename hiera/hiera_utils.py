@@ -130,7 +130,7 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
                     assert model.pos_embed.shape == new_pos_embedding_img.shape
                 
                 model.load_state_dict(state_dict["state_dict"], strict=strict)
-                print('Successfully loaded model from checkpoint')
+                print(f'Successfully loaded model from checkpoint {custom_ckpt_path}')
                 del state_dict
 
             elif pretrained:

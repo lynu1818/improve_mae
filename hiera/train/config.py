@@ -352,8 +352,8 @@ class TrainArgs:
 
             "hiera_tiny_512":                      { "lr": 2e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.65 },
             "hiera_tiny_512_st_moe_0011_50p":      { "lr": 2e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.65 },
-            "hiera_base_plus_512":                 { "lr": 1e-3, "epochs": 100, "drop_path": 0.3, "layer_decay": 0.7  },
-            "hiera_base_plus_512_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.3, "layer_decay": 0.7  },
+            "hiera_base_plus_512":                 { "lr": 1e-3, "epochs": 100, "drop_path": 0.2, "layer_decay": 0.7  },
+            "hiera_base_plus_512_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.2, "layer_decay": 0.7  },
         }
 
         if model not in args:

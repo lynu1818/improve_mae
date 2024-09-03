@@ -20,10 +20,10 @@ from lightning.pytorch.loggers import WandbLogger
 def train(model_name: str, config_name: str, train_args: dict = {}):
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
     if not os.path.exists(args.log_path):
-        os.makedirs(args.log_path)
+        os.makedirs(args.log_path, exist_ok=True)
     save_whole_path = os.path.join(args.log_path, 'save_whole')
     if not os.path.exists(save_whole_path):
-        os.makedirs(save_whole_path)
+        os.makedirs(save_whole_path, exist_ok=True)
 
     torch.set_float32_matmul_precision('medium')
     if "mae" in config_name:
