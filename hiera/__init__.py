@@ -75,3 +75,11 @@ from .hiera_mae import (
     MaskedAutoencoderHiera,
     MaskedAutoencoderHieraSTMoE,
 )
+
+from .hieradet import (
+    hieradet_tiny_224
+)
+
+from .hieradet_mae import (
+    mae_hieradet_tiny_224
+)

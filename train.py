@@ -16,8 +16,10 @@ import argparse
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
-def train(model_name: str, config_name: str, train_args: dict = {}):
+def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict = {}):
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
     if not os.path.exists(args.log_path):
         os.makedirs(args.log_path, exist_ok=True)
@@ -43,7 +45,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         )
         engine = hiera.train.SupervisedEngine(model, args)
 
-    wandb_logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
+    
 
     ckpt_callback = ModelCheckpoint(
         filename='epoch-{epoch}',
@@ -60,7 +62,10 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         dirpath=save_whole_path,
         save_weights_only=False,
     )
-
+    if log_wandb:
+        logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
+    else:
+        logger = False
     #profiler = L.pytorch.profilers.AdvancedProfiler(dirpath=args.log_path)
 
     trainer = L.Trainer(
@@ -74,7 +79,7 @@ def train(model_name: str, config_name: str, train_args: dict = {}):
         strategy="ddp" if args.num_gpus * args.num_machines > 1 else "auto",
 
         default_root_dir=args.log_path,
-        logger=wandb_logger,
+        logger=logger,
         callbacks=[ckpt_callback, ckpt_callback_save_whole],
         profiler='simple',
     )
@@ -99,7 +104,7 @@ def make_arg_parser():
 
 def main(args: argparse.Namespace):
     train_args = { k[len("train."):]: v for k, v in vars(args).items() if k.startswith("train.") and v is not None }
-    train(args.model, args.config, train_args)
+    train(args.model, args.config, args.log_wandb, train_args)
 
 if __name__ == "__main__":
     args = make_arg_parser().parse_args()
