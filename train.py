@@ -4,6 +4,9 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import os
 import hiera
 import hiera.train
@@ -16,8 +19,6 @@ import argparse
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 
 def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict = {}):
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)

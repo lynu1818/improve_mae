@@ -362,13 +362,13 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
             16,
             20,
         ),
-
     ):
         super().__init__()
+        self.model_name = model_name
+
         self.window_spec = window_spec
         assert len(stages) == len(window_spec)
 
-        self.model_name = model_name
         # Do it this way to ensure that the init args are all PoD (for config usage)
         if isinstance(norm_layer, str):
             norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
@@ -390,13 +390,6 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
         ]
         self.stage_ends = [sum(stages[:i]) - 1 for i in range(1, len(stages) + 1)]
 
-        # self.patch_embed = PatchEmbed(
-        #     kernel_size = patch_kernel,
-        #     stride = patch_stride,
-        #     padding = patch_padding,
-        #     in_chans = in_chans,
-        #     embed_dim = embed_dim,
-        # )
         self.patch_embed = PatchEmbed(
             in_chans, embed_dim, patch_kernel, patch_stride, patch_padding
         )
@@ -411,7 +404,6 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
         self.pos_embed_window = nn.Parameter(
             torch.zeros(1, embed_dim, self.window_spec[0], self.window_spec[0])
         )
-
 
         # Setup roll and reroll modules
         self.unroll = Unroll(
@@ -467,7 +459,6 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
         self.head = Head(embed_dim, num_classes, dropout_rate=head_dropout)
 
         # Initialize everything
-
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
         nn.init.trunc_normal_(self.pos_embed_window, std=0.02)
         self.apply(partial(self._init_weights))
@@ -562,9 +553,7 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
         )
         # convert X to B, H, W, C
         x = x.permute(0, 2, 3, 1)
-
         x += self._get_pos_embed(x.shape[1:3])
-
         # convert X to B, H*W, C
         x = _flatten_images(x)
 
@@ -597,7 +586,7 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
         return x
 
 
-class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
+class HieraAbsWinSTMoE(nn.Module, PyTorchModelHubMixin):
     @has_config
     def __init__(
         self,
@@ -628,9 +617,29 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
         moe_stages: Tuple[bool, ...] = None,
         mlp_dropout: float = 0.0,
         expert_dropout: float = 0.0,
+        # ==============================================
+        # Windowed positional embedding
+        window_pos_embed_bkg_spatial_size: Tuple[int, int] = (14, 14),
+        # window size per stage, when not using global att.
+        window_spec: Tuple[int, ...] = (
+            8,
+            4,
+            14,
+            7,
+        ),
+        # global attn in these blocks
+        global_att_blocks: Tuple[int, ...] = (
+            12,
+            16,
+            20,
+        ),
     ):
         super().__init__()
         self.model_name = model_name
+
+        self.window_spec = window_spec
+        assert len(stages) == len(window_spec)
+
         # Do it this way to ensure that the init args are all PoD (for config usage)
         if isinstance(norm_layer, str):
             norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
@@ -659,20 +668,14 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
             in_chans, embed_dim, patch_kernel, patch_stride, patch_padding
         )
 
-        self.sep_pos_embed = sep_pos_embed
-        if sep_pos_embed:
-            self.pos_embed_spatial = nn.Parameter(
-                torch.zeros(
-                    1,
-                    self.tokens_spatial_shape[1] * self.tokens_spatial_shape[2],
-                    embed_dim,
-                )
-            )
-            self.pos_embed_temporal = nn.Parameter(
-                torch.zeros(1, self.tokens_spatial_shape[0], embed_dim)
-            )
-        else:
-            self.pos_embed = nn.Parameter(torch.zeros(1, num_tokens, embed_dim))
+        # Windowed positional embedding (https://arxiv.org/abs/2311.05613)
+        self.window_pos_embed_bkg_spatial_size = window_pos_embed_bkg_spatial_size
+        self.pos_embed = nn.Parameter(
+            torch.zeros(1, embed_dim, *self.window_pos_embed_bkg_spatial_size)
+        )
+        self.pos_embed_window = nn.Parameter(
+            torch.zeros(1, embed_dim, self.window_spec[0], self.window_spec[0])
+        )
 
         # Setup roll and reroll modules
         self.unroll = Unroll(
@@ -731,11 +734,8 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
         self.head = Head(embed_dim, num_classes, dropout_rate=head_dropout)
 
         # Initialize everything
-        if sep_pos_embed:
-            nn.init.trunc_normal_(self.pos_embed_spatial, std=0.02)
-            nn.init.trunc_normal_(self.pos_embed_temporal, std=0.02)
-        else:
-            nn.init.trunc_normal_(self.pos_embed, std=0.02)
+        nn.init.trunc_normal_(self.pos_embed, std=0.02)
+        nn.init.trunc_normal_(self.pos_embed_window, std=0.02)
         self.apply(partial(self._init_weights))
         self.head.projection.weight.data.mul_(head_init_scale)
         self.head.projection.bias.data.mul_(head_init_scale)
@@ -751,10 +751,7 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
 
     @torch.jit.ignore
     def no_weight_decay(self):
-        if self.sep_pos_embed:
-            return ["pos_embed_spatial", "pos_embed_temporal"]
-        else:
-            return ["pos_embed"]
+        return ["pos_embed", "pos_embed_window"]
         
     @torch.jit.ignore
     def num_layers(self):
@@ -762,7 +759,7 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
     
     @torch.jit.ignore
     def get_layer_id(self, name: str):
-        if name.startswith("pos_embed") or name.startswith("patch_embed"):
+        if name.startswith("pos_embed") or name.startswith("pos_embed_window") or name.startswith("patch_embed"):
             return 0
         elif "blocks" in name:
             return int(name.split(".")[1]) + 1
@@ -795,17 +792,15 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
 
         return mask.bool()
 
-    def get_pos_embed(self) -> torch.Tensor:
-        if self.sep_pos_embed:
-            return self.pos_embed_spatial.repeat(
-                1, self.tokens_spatial_shape[0], 1
-            ) + torch.repeat_interleave(
-                self.pos_embed_temporal,
-                self.tokens_spatial_shape[1] * self.tokens_spatial_shape[2],
-                dim=1,
-            )
-        else:
-            return self.pos_embed
+    def _get_pos_embed(self, hw: Tuple[int, int]) -> torch.Tensor:
+        h, w = hw
+        window_embed = self.pos_embed_window
+        pos_embed = F.interpolate(self.pos_embed, size=(h, w), mode="bicubic")
+        pos_embed = pos_embed + window_embed.tile(
+            [x // y for x, y in zip(pos_embed.shape, window_embed.shape)]
+        )
+        pos_embed = pos_embed.permute(0, 2, 3, 1)
+        return pos_embed
 
     def forward(
         self,
@@ -822,6 +817,7 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
             x = x[0]
         intermediates = []
 
+        # X is B, C, H, W
         x = self.patch_embed(
             x,
             mask=mask.view(
@@ -830,7 +826,12 @@ class HieraSTMoE(nn.Module, PyTorchModelHubMixin):
             if mask is not None
             else None,
         )
-        x = x + self.get_pos_embed()
+        # convert X to B, H, W, C
+        x = x.permute(0, 2, 3, 1)
+        x += self._get_pos_embed(x.shape[1:3])
+        # convert X to B, H*W, C
+        x = _flatten_images(x)
+
         x = self.unroll(x)
 
         # Discard masked tokens
@@ -872,3 +873,14 @@ def hiera_abs_win_tiny_224(**kwdargs):
     return HieraAbsWin(embed_dim=96, num_heads=1, stages=(1, 2, 7, 2), **kwdargs)
 
 
+@pretrained_model({})
+def hiera_abs_win_tiny_224_st_moe_0011_50p(**kwdargs):
+    moe_stages = (
+        False,
+        False, False,
+        False, False, False, False, True, True, True,
+        False, True
+    )
+    stages = (1, 2, 7, 2)
+    assert len(moe_stages) == sum(stages)
+    return HieraAbsWinSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
