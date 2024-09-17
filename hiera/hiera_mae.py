@@ -205,7 +205,6 @@ class MaskedAutoencoderHiera(Hiera):
         x = 0.0
         for head, interm_x in zip(self.multi_scale_fusion_heads, intermediates):
             x += apply_fusion_head(head, interm_x)
-
         x = self.encoder_norm(x)
 
         return x, mask

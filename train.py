@@ -44,9 +44,6 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
             expert_dropout=args.expert_dropout,
         )
         engine = hiera.train.SupervisedEngine(model, args)
-
-    
-
     ckpt_callback = ModelCheckpoint(
         filename='epoch-{epoch}',
         save_top_k=-1,

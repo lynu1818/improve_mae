@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 
 from .hiera import HieraBlock
-from .hieradet import HieraDet
+from .hiera_abs_win import HieraAbsWin
 from .hiera_utils import pretrained_model, undo_windowing, conv_nd
 from .hfhub import has_config
 
@@ -30,13 +30,14 @@ def apply_fusion_head(head: nn.Module, x: torch.Tensor) -> torch.Tensor:
     # Apply head, e.g [B, #MUs, My, Mx, C] -> head([B * #MUs, C, My, Mx])
     permute = [0] + [len(x.shape) - 2] + list(range(1, len(x.shape) - 2))
     x = head(x.reshape(B * num_mask_units, *x.shape[2:]).permute(permute))
+
     # Restore original layout, e.g. [B * #MUs, C', My', Mx'] -> [B, #MUs, My', Mx', C']
     permute = [0] + list(range(2, len(x.shape))) + [1]
     x = x.permute(permute).reshape(B, num_mask_units, *x.shape[2:], x.shape[1])
     return x
 
-class MaskedAutoencoderHieraDet(HieraDet):
-    """Masked Autoencoder with HieraDet backbone"""
+class MaskedAutoencoderHieraAbsWin(HieraAbsWin):
+    """Masked Autoencoder with Hiera backbone with window pos embed"""
 
     @has_config
     def __init__(
@@ -296,7 +297,7 @@ class MaskedAutoencoderHieraDet(HieraDet):
 
 
 @pretrained_model({})
-def mae_hieradet_tiny_224(**kwargs):
-    return MaskedAutoencoderHieraDet(
+def mae_hiera_abs_win_tiny_224(**kwargs):
+    return MaskedAutoencoderHieraAbsWin(
         embed_dim=96, num_heads=1, stages=(1, 2, 7, 2), q_pool=2, **kwargs,
     )

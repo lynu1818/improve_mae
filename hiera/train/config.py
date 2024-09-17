@@ -356,6 +356,7 @@ class TrainArgs:
             "hiera_base_plus_512_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.2, "layer_decay": 0.7  },
 
             "hieradet_tiny_224": { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
+            "hiera_abs_win_tiny_224": { "lr": 2e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.65 },
         }
 
         if model not in args:
@@ -395,6 +396,7 @@ class TrainArgs:
             "hiera_base_plus_512_st_moe_0011_50p": { "drop_path": 0.3 },
 
             "hieradet_tiny_224": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_224": {"drop_path": 0.0},
 
         }
 

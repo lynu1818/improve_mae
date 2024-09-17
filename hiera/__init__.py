@@ -83,3 +83,12 @@ from .hieradet import (
 from .hieradet_mae import (
     mae_hieradet_tiny_224
 )
+
+from .hiera_abs_win import (
+    HieraAbsWin,
+    hiera_abs_win_tiny_224,
+)
+
+from .hiera_abs_win_mae import (
+    mae_hiera_abs_win_tiny_224
+)

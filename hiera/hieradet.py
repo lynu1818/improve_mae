@@ -338,6 +338,7 @@ class HieraDet(nn.Module):
             ):
                 feats = x.permute(0, 3, 1, 2)
                 outputs.append(feats)
+
         if return_intermediates:
             return x, outputs
 
