@@ -87,12 +87,16 @@ from .hieradet_mae import (
 from .hiera_abs_win import (
     HieraAbsWin,
     hiera_abs_win_tiny_224,
+    hiera_abs_win_tiny_512,
 
     hiera_abs_win_tiny_224_st_moe_0011_50p,
+    hiera_abs_win_tiny_512_st_moe_0011_50p,
 )
 
 from .hiera_abs_win_mae import (
     mae_hiera_abs_win_tiny_224,
+    mae_hiera_abs_win_tiny_512,
 
     mae_hiera_abs_win_tiny_224_st_moe_0011_50p,
+    mae_hiera_abs_win_tiny_512_st_moe_0011_50p,
 )

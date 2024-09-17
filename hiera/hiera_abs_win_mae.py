@@ -564,6 +564,12 @@ def mae_hiera_abs_win_tiny_224(**kwargs):
     )
 
 @pretrained_model({})
+def mae_hiera_abs_win_tiny_512(**kwargs):
+    return MaskedAutoencoderHieraAbsWin(
+        embed_dim=96, num_heads=1, stages=(1, 2, 7, 2), q_pool=2, input_size=(512, 512), **kwargs,
+    )
+
+@pretrained_model({})
 def mae_hiera_abs_win_tiny_224_st_moe_0011_50p(**kwargs):
     moe_stages = (
         False,
@@ -575,4 +581,18 @@ def mae_hiera_abs_win_tiny_224_st_moe_0011_50p(**kwargs):
     assert len(moe_stages) == sum(stages)
     return MaskedAutoencoderHieraAbsWinSTMoE(
         embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, **kwargs,
+   )
+
+@pretrained_model({})
+def mae_hiera_abs_win_tiny_512_st_moe_0011_50p(**kwargs):
+    moe_stages = (
+        False,
+        False, False,
+        False, False, False, False, True, True, True,
+        False, True
+    )
+    stages = (1, 2, 7, 2)
+    assert len(moe_stages) == sum(stages)
+    return MaskedAutoencoderHieraAbsWinSTMoE(
+        embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, q_pool=2, num_experts=16, input_size=(512, 512), **kwargs,
    )
