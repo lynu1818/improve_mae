@@ -60,10 +60,10 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
         dirpath=save_whole_path,
         save_weights_only=False,
     )
-    if log_wandb:
-        logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
-    else:
-        logger = False
+    #if log_wandb:
+    logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
+    #else:
+    #    logger = False
     #profiler = L.pytorch.profilers.AdvancedProfiler(dirpath=args.log_path)
 
     trainer = L.Trainer(

@@ -876,6 +876,13 @@ def hiera_abs_win_tiny_224(**kwdargs):
 def hiera_abs_win_tiny_512(**kwdargs):
     return HieraAbsWin(embed_dim=96, num_heads=1, stages=(1, 2, 7, 2), input_size=(512, 512), **kwdargs)
 
+@pretrained_model({})
+def hiera_abs_win_base_plus_224(**kwdargs):
+    return HieraAbsWin(embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), **kwdargs)
+
+@pretrained_model({})
+def hiera_abs_win_base_plus_512(**kwdargs):
+    return HieraAbsWin(embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), input_size=(512, 512), **kwdargs)
 
 @pretrained_model({})
 def hiera_abs_win_tiny_224_st_moe_0011_50p(**kwdargs):
@@ -898,5 +905,31 @@ def hiera_abs_win_tiny_512_st_moe_0011_50p(**kwdargs):
         False, True
     )
     stages = (1, 2, 7, 2)
+    assert len(moe_stages) == sum(stages)
+    return HieraAbsWinSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, input_size=(512, 512), **kwdargs)
+
+@pretrained_model({})
+def hiera_abs_win_base_plus_224_st_moe_0011_50p(**kwdargs):
+    moe_stages = (
+        False, False,
+        False, False, False,
+        False, False, False, False, False, False, False, False,
+        True,  True,  True,  True,  True,  True,  True,  True, 
+        False, False, True
+    )
+    stages = (2, 3, 16, 3)
+    assert len(moe_stages) == sum(stages)
+    return HieraAbsWinSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, **kwdargs)
+
+@pretrained_model({})
+def hiera_abs_win_base_plus_512_st_moe_0011_50p(**kwdargs):
+    moe_stages = (
+        False, False,
+        False, False, False,
+        False, False, False, False, False, False, False, False,
+        True,  True,  True,  True,  True,  True,  True,  True, 
+        False, False, True
+    )
+    stages = (2, 3, 16, 3)
     assert len(moe_stages) == sum(stages)
     return HieraAbsWinSTMoE(embed_dim=96, num_heads=1, stages=stages, moe_stages=moe_stages, input_size=(512, 512), **kwdargs)
