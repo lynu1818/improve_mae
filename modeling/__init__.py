@@ -108,3 +108,11 @@ from .hiera_abs_win_mae import (
     mae_hiera_abs_win_base_plus_224_st_moe_0011_50p,
     mae_hiera_abs_win_base_plus_512_st_moe_0011_50p,
 )
+
+from .vit_mae import (
+    mae_vit_base_224,
+    mae_vit_large_224,
+    mae_vit_huge_224,
+    mae_vit_base_512,
+    mae_vit_large_512,
+)

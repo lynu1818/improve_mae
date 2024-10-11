@@ -8,9 +8,9 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import os
-import hiera
-import hiera.train
-import hiera.train.config as config
+import modeling
+import modeling.train
+import modeling.train.config as config
 
 import lightning as L
 import torch
@@ -18,7 +18,7 @@ import argparse
 
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
-
+from pytorch_lightning.profiler import SimpleProfiler
 
 def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict = {}):
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
@@ -30,10 +30,10 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
 
     torch.set_float32_matmul_precision('medium')
     if "mae" in config_name:
-        model = getattr(hiera, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
-        engine = hiera.train.MAEEngine(model, args)
+        model = getattr(modeling, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
+        engine = modeling.train.MAEEngine(model, args)
     else:
-        model = getattr(hiera, model_name)(
+        model = getattr(modeling, model_name)(
             # Temporary, replace with loading from a checkpoint
             pretrained=False, 
             custom_ckpt_path=args.custom_ckpt_path, 
@@ -44,7 +44,7 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
             mlp_dropout=args.mlp_dropout,
             expert_dropout=args.expert_dropout,
         )
-        engine = hiera.train.SupervisedEngine(model, args)
+        engine = modeling.train.SupervisedEngine(model, args)
     ckpt_callback = ModelCheckpoint(
         filename='epoch-{epoch}',
         save_top_k=-1,
@@ -60,13 +60,17 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
         dirpath=save_whole_path,
         save_weights_only=False,
     )
-    #if log_wandb:
-    logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
-    #else:
-    #    logger = False
-    #profiler = L.pytorch.profilers.AdvancedProfiler(dirpath=args.log_path)
+    if log_wandb:
+        logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
+    else:
+        logger = False
+
+    profiler = SimpleProfiler(filename=f'{model_name}')
 
     trainer = L.Trainer(
+        # max_steps=1,
+        # limit_train_batches=0.01,
+        # limit_val_batches=0.1,
         max_epochs=args.epochs,
         precision=args.precision,
         accumulate_grad_batches=max(args.lr_batch_size // args.batch_size, 1),
@@ -79,7 +83,7 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
         default_root_dir=args.log_path,
         logger=logger,
         callbacks=[ckpt_callback, ckpt_callback_save_whole],
-        profiler='simple',
+        profiler=profiler
     )
 
     torch.cuda.empty_cache()
