@@ -20,7 +20,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 from pytorch_lightning.profiler import SimpleProfiler
 
-def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict = {}):
+def train(model_name: str, config_name: str, log_wandb: bool, strategy: str, train_args: dict = {}):
     args = getattr(config.TrainArgs, config_name)(model_name).mutate(train_args)
     if not os.path.exists(args.log_path):
         os.makedirs(args.log_path, exist_ok=True)
@@ -65,7 +65,7 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
     else:
         logger = False
 
-    profiler = SimpleProfiler(filename=f'{model_name}')
+    #profiler = SimpleProfiler(filename=f'{model_name}')
 
     trainer = L.Trainer(
         # max_steps=1,
@@ -78,12 +78,12 @@ def train(model_name: str, config_name: str, log_wandb: bool, train_args: dict =
 
         devices=args.num_gpus,
         num_nodes=args.num_machines,
-        strategy="ddp" if args.num_gpus * args.num_machines > 1 else "auto",
+        strategy=strategy if args.num_gpus * args.num_machines > 1 else "auto",
 
         default_root_dir=args.log_path,
         logger=logger,
         callbacks=[ckpt_callback, ckpt_callback_save_whole],
-        profiler=profiler
+        #profiler=profiler
     )
 
     torch.cuda.empty_cache()
@@ -99,6 +99,7 @@ def make_arg_parser():
     parser.add_argument("--model", required=True, type=str, help="Name of the model, e.g. 'hiera_tiny_224'. See hiera.py for available models.")
     parser.add_argument("--config", required=True, type=str, help="Name of the config, e.g. 'in1k_finetune'. See hiera/train/config.py (TrainArgs) for available configs.")
     parser.add_argument('--log-wandb', default=False, action='store_true', help='Log to wandb')
+    parser.add_argument('--strategy', default='ddp', type=str, choices=['auto', 'ddp', 'fsdp'], help='Training strategy to use. Options: auto, fsdp_native')
     config.TrainArgs.parse(parser, "train.")
 
     return parser
@@ -106,7 +107,7 @@ def make_arg_parser():
 
 def main(args: argparse.Namespace):
     train_args = { k[len("train."):]: v for k, v in vars(args).items() if k.startswith("train.") and v is not None }
-    train(args.model, args.config, args.log_wandb, train_args)
+    train(args.model, args.config, args.log_wandb, args.strategy, train_args)
 
 if __name__ == "__main__":
     args = make_arg_parser().parse_args()

@@ -235,7 +235,9 @@ class MaskedAutoencoderViT(nn.Module):
             pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
         with self.profiler.profile('loss'):
             loss = self.forward_loss(imgs, pred, mask)
-        return loss, pred, mask
+        
+        label = None
+        return loss, pred, label, mask
 
 
 @pretrained_model({})
