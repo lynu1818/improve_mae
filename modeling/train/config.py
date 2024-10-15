@@ -6,7 +6,8 @@
 # --------------------------------------------------------
 import typing
 
-from torchvision import datasets, transforms
+from torchvision import datasets
+from torchvision.transforms import v2
 
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
@@ -151,7 +152,7 @@ class Augmentations:
 
     mixup: Mixup = Mixup()
 
-    def __call__(self, train: bool, img_size: int) -> transforms.Compose:
+    def __call__(self, train: bool, img_size: int) -> v2.Compose:
         if train:
             if self.auto_augment != "":
                 return create_transform(
@@ -168,25 +169,29 @@ class Augmentations:
                 )
             else:
                 # Simple MAE augmentations
-                return transforms.Compose([
-                    transforms.RandomResizedCrop(
+                return v2.Compose([
+                    v2.ToImage(),
+                    v2.ToDtype(torch.uint8, scale=True),
+                    v2.RandomResizedCrop(
                         img_size,
                         scale=(self.min_scale, self.max_scale),
-                        interpolation=transforms.InterpolationMode.BICUBIC
+                        interpolation=v2.InterpolationMode.BICUBIC
                     ),
-                    transforms.RandomHorizontalFlip(self.horizontal_flip_prob),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=self.mean, std=self.std)
+                    v2.RandomHorizontalFlip(self.horizontal_flip_prob),
+                    v2.ToDtype(torch.float32, scale=True),
+                    v2.Normalize(mean=self.mean, std=self.std)
                 ])
         else:
             crop_pct = 1.0 if img_size > 224 else 224 / 256
             size = int(img_size / crop_pct)
 
-            return transforms.Compose([
-                transforms.Resize(size, interpolation=transforms.InterpolationMode.BICUBIC),
-                transforms.CenterCrop(img_size),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=self.mean, std=self.std),
+            return v2.Compose([
+                v2.ToImage(),
+                v2.ToDtype(torch.uint8, scale=True),
+                v2.Resize(size, interpolation=v2.InterpolationMode.BICUBIC),
+                v2.CenterCrop(img_size),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.Normalize(mean=self.mean, std=self.std),
             ])
         
 
@@ -232,6 +237,9 @@ class Dataset:
         """ Construct a pytorch dataset from the given configuration. """
         transform = self.augmentations(train, img_size)
         
+        if self.type == 'sa1b':
+            root = os.path.join(self.path)
+            dataset = datasets.ImageFolder(root, transform=transform)
         if self.type == "imagefolder":
             root = os.path.join(self.path, "train" if train else "val")
             dataset = datasets.ImageFolder(root, transform=transform)
@@ -268,7 +276,7 @@ class TrainArgs:
     expert_dropout: float = 0.0  # [ADDED] Dropout rate for experts. Switch Transformers.
 
     batch_size: int = 128      # TOTAL batch size across _all_ gpus
-    num_workers: int = 8
+    num_workers: int = 16
 
     # Batch size will be automatically split evenly among gpus*machines and lr will be scaled accordingly
     num_machines: int = 1     # Number of machines
