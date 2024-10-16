@@ -16,7 +16,7 @@ import lightning as L
 from typing import Tuple, Optional
 
 from torch.optim.optimizer import Optimizer
-from .. import MaskedAutoencoderHiera, Hiera, MaskedAutoencoderHieraSTMoE, HieraSTMoE
+from .. import MaskedAutoencoderHiera, Hiera, MaskedAutoencoderHieraSTMoE, HieraSTMoE, VisionTransformer, MaskedAutoencoderViT
 from . import config
 from .utils import make_param_groups, patch_lr_scheduler
 
@@ -36,7 +36,7 @@ def reinit(cls, model: nn.Module, **kwdargs):
 
 class SupervisedEngine(L.LightningModule):
     
-    def __init__(self, model: Hiera | HieraSTMoE, args: config.TrainArgs, **kwargs):
+    def __init__(self, model: Hiera | HieraSTMoE | VisionTransformer, args: config.TrainArgs, **kwargs):
         super().__init__(**kwargs)
 
         self.args = args
@@ -143,7 +143,7 @@ class SupervisedEngine(L.LightningModule):
 
 class MAEEngine(L.LightningModule):
     
-    def __init__(self, model: MaskedAutoencoderHiera | MaskedAutoencoderHieraSTMoE, args: config.TrainArgs, **kwargs):
+    def __init__(self, model: MaskedAutoencoderHiera | MaskedAutoencoderHieraSTMoE | MaskedAutoencoderViT, args: config.TrainArgs, **kwargs):
         super().__init__(**kwargs)
 
         self.args = args
