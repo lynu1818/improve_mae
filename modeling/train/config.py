@@ -16,12 +16,13 @@ from torch.utils.data import DataLoader
 
 import torch
 import os
+import tqdm
 
 from .utils import config, field
 
 
 from flash.core.optimizers import LAMB
-
+from PIL import Image
 
 
 @config
@@ -222,14 +223,55 @@ class Augmentations:
         
 
 
+class InMemoryImageFolder(datasets.ImageFolder):
+    def __init__(self, root, transform=None):
+        super().__init__(root, transform=transform)
+        self.images = []
+        self.labels = []
+        self._load_data()
 
+    def _load_data(self):
+        # Load all images and labels into memory
+        print(f"Loading {len(self.samples)} images into memory...")
+        for path, label in tqdm.tqdm(self.samples):
+            with open(path, 'rb') as f:
+                img = Image.open(f).convert('RGB')
+                if self.transform is not None:
+                    img = self.transform(img)
+                self.images.append(img)
+                self.labels.append(label)
+        
+        self.images = torch.stack(self.images)
+        self.labels = torch.tensor(self.labels)
+
+    def __getitem__(self, index):
+        return self.images[index], self.labels[index]
+
+    def __len__(self):
+        return len(self.images)
+
+class SA1bDataset(torch.utils.data.Dataset):
+    def __init__(self, root, pct=1.0, transform=None):
+        super().__init__(root, transform=transform)
+        self.images = []
+        self.labels = []
+        self._load_data()
+
+    def _load_data(self):
+        pass
+
+    def __getitem__(self, index):
+        return self.images[index], self.labels[index]
+
+    def __len__(self):
+        return len(self.images)
 
 
 @config
 class Dataset:
 
     path: str = "/mnt/home/andyqmongo/data/imagenet/imagenet"
-    type: str = "imagefolder"  # "imagenet" or "imagefolder", "imagefolder" should have "train" and "val" subfolders
+    type: str = "imagefolder"  # ("imagenet", "imagefolder", or "sa1b_10pct", "sa1b_50pct", "sa1b"), "imagefolder" should have "train" and "val" subfolders
     augmentations: Augmentations = Augmentations.supervised()
     num_classes: int = 1000
 
@@ -237,12 +279,14 @@ class Dataset:
         """ Construct a pytorch dataset from the given configuration. """
         transform = self.augmentations(train, img_size)
         
-        if self.type == 'sa1b':
+        if self.type.find("sa1b") >= 0:
             root = os.path.join(self.path)
             dataset = datasets.ImageFolder(root, transform=transform)
+
         if self.type == "imagefolder":
             root = os.path.join(self.path, "train" if train else "val")
             dataset = datasets.ImageFolder(root, transform=transform)
+            #dataset = InMemoryImageFolder(root, transform=transform)
         elif self.type == "imagenet":
             dataset = datasets.ImageNet(self.path, "train" if train else "val", transform=transform)
         else:
@@ -276,7 +320,7 @@ class TrainArgs:
     expert_dropout: float = 0.0  # [ADDED] Dropout rate for experts. Switch Transformers.
 
     batch_size: int = 128      # TOTAL batch size across _all_ gpus
-    num_workers: int = 16
+    num_workers: int = 64
 
     # Batch size will be automatically split evenly among gpus*machines and lr will be scaled accordingly
     num_machines: int = 1     # Number of machines
@@ -375,10 +419,10 @@ class TrainArgs:
             "hiera_abs_win_base_plus_512_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             
             "vit_base_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.7 },
-            "vit_large_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.7  },
+            "vit_large_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.75  },
             "vit_huge_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.3, "layer_decay": 0.7  },
             "vit_base_512": { "lr": 1e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.7  },
-            "vit_large_512": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.7  },
+            "vit_large_512": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.75  },
         }
 
         if model not in args:
@@ -448,7 +492,7 @@ class TrainArgs:
             lr_batch_size=4096,
             warmup_epochs=40,
             mask_ratio=0.6,
-            epochs=1600,
+            epochs=400,
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
@@ -457,7 +501,7 @@ class TrainArgs:
         )
 
     @classmethod
-    def in21k_mae(cls, model: str):
+    def sa1b_10pct_mae(cls, model: str):
         args = {
             "hiera_tiny_224":      { "drop_path": 0.0 },
             "hiera_small_224":     { "drop_path": 0.0 },
@@ -470,10 +514,28 @@ class TrainArgs:
             "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
             "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
 
-            "hiera_small_224_st_moe_0011_50p":     { "drop_path": 0.0 },
-            "hiera_base_224_st_moe_0011_50p":      { "drop_path": 0.2 },
-            "hiera_base_plus_224_st_moe_0011_50p": { "drop_path": 0.2 },
-            "hiera_large_224_st_moe_0011_50p":     { "drop_path": 0.2 },
+            "hiera_tiny_512":                      { "drop_path": 0.1 },
+            "hiera_tiny_512_st_moe_0011_50p":      { "drop_path": 0.1 },
+            "hiera_base_plus_512":                 { "drop_path": 0.3 },
+            "hiera_base_plus_512_st_moe_0011_50p": { "drop_path": 0.3 },
+
+            "hieradet_tiny_224": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_224": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_224_st_moe_0011_50p": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_512": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_512_st_moe_0011_50p": {"drop_path": 0.0},
+
+
+            "hiera_abs_win_base_plus_224": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_512": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"drop_path": 0.2},
+
+            "vit_base_224": {"drop_path": 0.1},
+            "vit_large_224": {"drop_path": 0.1},
+            "vit_huge_224": {"drop_path": 0.1},
+            "vit_base_512": {"drop_path": 0.1},
+            "vit_large_512": {"drop_path": 0.1},
 
         }
 
@@ -483,12 +545,12 @@ class TrainArgs:
         return cls(
             weight_decay=0.05,
             layer_decay=1.0,
-            batch_size=4096,
+            batch_size=128,
             lr=8e-4,
             lr_batch_size=4096,
             warmup_epochs=40,
             mask_ratio=0.6,
-            epochs=1600,
+            epochs=400,
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),

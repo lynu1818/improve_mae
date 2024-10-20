@@ -98,24 +98,41 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
                     print("Interpolating positional embeddings")
                     pos_embed = state_dict["state_dict"]["pos_embed"]
                     n, seq_length, hidden_dim = pos_embed.shape
+                    new_seq_length = model.pos_embed.shape[1]
                     if n!=1:
                         raise ValueError(f"Unexpected position embedding shape: {pos_embed.shape}")
-                    new_seq_length = model.pos_embed.shape[1]
+                    
+                    is_perfect_square = None
+                    if int(math.sqrt(seq_length))**2 == seq_length:
+                        is_perfect_square = True
+                    elif int(math.sqrt(seq_length))**2 + 1 == seq_length:
+                        is_perfect_square = False
+                    else:
+                        raise ValueError(f"Unexpected position embedding shape: {pos_embed.shape}")
+
+                    if not is_perfect_square:
+                        # The class token embedding shouldn't be interpolated, so we split it up.
+                        seq_length -= 1
+                        new_seq_length -= 1
+                        #pos_embedding_token = pos_embed[:, :1, :]
+                        pos_embedding_token = state_dict["state_dict"]['cls_token']
+                        pos_embedding_img = pos_embed[:, 1:, :]
+
 
                     # (0, seq_length, hidden_dim) -> (0, hidden_dim, seq_length)
-                    pos_embed = pos_embed.permute(0, 2, 1)
+                    pos_embedding_img = pos_embedding_img.permute(0, 2, 1)
                     seq_length_1d = int(math.sqrt(seq_length))
                     torch._assert(seq_length_1d * seq_length_1d == seq_length, "seq_length is not a perfect square!")
 
                     # (1, hidden_dim, seq_length) -> (1, hidden_dim, seq_l_1d, seq_l_1d)
-                    pos_embed = pos_embed.reshape(1, hidden_dim, seq_length_1d, seq_length_1d)
+                    pos_embedding_img = pos_embedding_img.reshape(1, hidden_dim, seq_length_1d, seq_length_1d)
 
                     new_seq_length_1d = int(math.sqrt(new_seq_length))
                     torch._assert(new_seq_length_1d * new_seq_length_1d == new_seq_length, "new_seq_length is not a perfect square!")
 
                     # Perform interpolation.
                     new_pos_embedding_img = F.interpolate(
-                        pos_embed,
+                        pos_embedding_img,
                         size=new_seq_length_1d,
                         mode="bicubic",
                         align_corners=True,
@@ -126,8 +143,11 @@ def pretrained_model(checkpoints: Dict[str, str], default: str = None,
 
                     # (1, hidden_dim, new_seq_length) -> (1, new_seq_length, hidden_dim)
                     new_pos_embedding_img = new_pos_embedding_img.permute(0, 2, 1)
-                    state_dict["state_dict"]["pos_embed"] = new_pos_embedding_img
-                    assert model.pos_embed.shape == new_pos_embedding_img.shape
+                    # concat class token back
+                    new_pos_embedding = torch.cat([pos_embedding_token, new_pos_embedding_img], dim=1)
+
+                    state_dict["state_dict"]["pos_embed"] = new_pos_embedding
+                    assert model.pos_embed.shape == new_pos_embedding.shape
                 
                 model.load_state_dict(state_dict["state_dict"], strict=strict)
                 print(f'Successfully loaded model from checkpoint {custom_ckpt_path}')
