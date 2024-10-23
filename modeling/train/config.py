@@ -4,25 +4,23 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
+import os
+import tqdm
 import typing
+from PIL import Image
 
+import torch
+from torch.utils.data import DataLoader, Dataset
 from torchvision import datasets
 from torchvision.transforms import v2
 
+import timm.data
 from timm.data import create_transform
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-import timm.data
-from torch.utils.data import DataLoader
-
-import torch
-import os
-import tqdm
 
 from .utils import config, field
 
-
 from flash.core.optimizers import LAMB
-from PIL import Image
 
 
 @config
@@ -250,40 +248,53 @@ class InMemoryImageFolder(datasets.ImageFolder):
     def __len__(self):
         return len(self.images)
 
-class SA1bDataset(torch.utils.data.Dataset):
+class SA1B_Dataset(Dataset):
     def __init__(self, root, pct=1.0, transform=None):
-        super().__init__(root, transform=transform)
-        self.images = []
-        self.labels = []
-        self._load_data()
+        self.root = root
+        self.transform = transform
+        self.image_paths = []
 
-    def _load_data(self):
-        pass
+        # Get the list of directories
+        dirs = sorted([d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d)) and d.startswith('sa_')])
+        num_dirs = int(1000 * pct)
+        dirs = dirs[:num_dirs]
+
+        # Preload all image paths and labels
+        for dir_name in dirs:
+            dir_path = os.path.join(root, dir_name)
+            for file_name in os.listdir(dir_path):
+                if file_name.endswith('.jpg'):
+                    file_path = os.path.join(dir_path, file_name)
+                    self.image_paths.append(file_path)
 
     def __getitem__(self, index):
-        return self.images[index], self.labels[index]
+        image_path = self.image_paths[index]
+        with open(image_path, 'rb') as f:
+            image = Image.open(f).convert('RGB')
+        if self.transform:
+            image = self.transform(image)
+        return image, -1.
 
     def __len__(self):
-        return len(self.images)
-
+        return len(self.image_paths)
 
 @config
 class Dataset:
 
     path: str = "/mnt/home/andyqmongo/data/imagenet/imagenet"
-    type: str = "imagefolder"  # ("imagenet", "imagefolder", or "sa1b_10pct", "sa1b_50pct", "sa1b"), "imagefolder" should have "train" and "val" subfolders
+    type: str = "imagefolder"  # ("imagenet", "imagefolder", or "sa1b"), "imagefolder" should have "train" and "val" subfolders
     augmentations: Augmentations = Augmentations.supervised()
     num_classes: int = 1000
+    sa1b_pct: float = 0.1
+    sa1b_path = "/mnt/home/andyqmongo/data/SA-1B/SA-1B-Downloader/sa1b_extracted/"
 
     def __call__(self, train: bool, img_size: int) -> torch.utils.data.Dataset:
         """ Construct a pytorch dataset from the given configuration. """
         transform = self.augmentations(train, img_size)
-        
+        print(f'Preparing dataset {self.type}')
         if self.type.find("sa1b") >= 0:
-            root = os.path.join(self.path)
-            dataset = datasets.ImageFolder(root, transform=transform)
-
-        if self.type == "imagefolder":
+            dataset = SA1B_Dataset(self.sa1b_path, self.sa1b_pct, transform=transform)
+        elif self.type == "imagefolder":
             root = os.path.join(self.path, "train" if train else "val")
             dataset = datasets.ImageFolder(root, transform=transform)
             #dataset = InMemoryImageFolder(root, transform=transform)
@@ -320,7 +331,8 @@ class TrainArgs:
     expert_dropout: float = 0.0  # [ADDED] Dropout rate for experts. Switch Transformers.
 
     batch_size: int = 128      # TOTAL batch size across _all_ gpus
-    num_workers: int = 64
+    num_workers: int = 56
+    prefetch_factor: int = 2
 
     # Batch size will be automatically split evenly among gpus*machines and lr will be scaled accordingly
     num_machines: int = 1     # Number of machines
@@ -351,6 +363,7 @@ class TrainArgs:
             shuffle=True,
             num_workers=self.num_workers,
             persistent_workers=(self.num_workers > 0),
+            prefetch_factor=self.prefetch_factor,
             pin_memory=True,
             drop_last=True, # Important for mixup
         )
@@ -361,6 +374,7 @@ class TrainArgs:
             shuffle=False,
             num_workers=self.num_workers,
             persistent_workers=(self.num_workers > 0),
+            prefetch_factor=self.prefetch_factor,
             pin_memory=True
         )
         return train_loader, val_loader
@@ -501,7 +515,7 @@ class TrainArgs:
         )
 
     @classmethod
-    def sa1b_10pct_mae(cls, model: str):
+    def sa1b_mae(cls, model: str):
         args = {
             "hiera_tiny_224":      { "drop_path": 0.0 },
             "hiera_small_224":     { "drop_path": 0.0 },
@@ -552,7 +566,7 @@ class TrainArgs:
             mask_ratio=0.6,
             epochs=400,
 
-            dataset=Dataset(augmentations = Augmentations.mae()),
+            dataset=Dataset(type='sa1b', augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
             
             **args[model]

@@ -84,6 +84,7 @@ def train(model_name: str,
         precision=args.precision,
         accumulate_grad_batches=max(args.lr_batch_size // args.batch_size, 1),
         accelerator="gpu",
+        check_val_every_n_epoch=10,
 
         devices=args.num_gpus,
         num_nodes=args.num_machines,
