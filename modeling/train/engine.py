@@ -16,7 +16,7 @@ import lightning as L
 from typing import Tuple, Optional
 
 from torch.optim.optimizer import Optimizer
-from .. import MaskedAutoencoderHiera, Hiera, MaskedAutoencoderHieraSTMoE, HieraSTMoE, VisionTransformer, MaskedAutoencoderViT
+from .. import MaskedAutoencoderHiera, Hiera, MaskedAutoencoderHieraSTMoE, HieraSTMoE, VisionTransformer, MaskedAutoencoderViT, EfficientMaskedAutoencoderViT
 from . import config
 from .utils import make_param_groups, patch_lr_scheduler
 
@@ -207,3 +207,69 @@ class MAEEngine(L.LightningModule):
 
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
+
+class EMAEEngine(L.LightningModule):
+    
+    def __init__(self, model: EfficientMaskedAutoencoderViT, args: config.TrainArgs, **kwargs):
+        super().__init__(**kwargs)
+
+        self.args = args
+
+        self.model = reinit(type(model), model, drop_path_rate=args.drop_path)
+        self.save_hyperparameters({"model": model.config, "args": args.save()})
+
+        self.train_loader, self.val_loader = args.make_dataloaders(model.input_size[-1])
+
+    def train_dataloader(self) -> torch.Any:
+        return self.train_loader
+    
+    def val_dataloader(self) -> torch.Any:
+        return self.val_loader
+    
+    def test_dataloader(self) -> torch.Any:
+        return self.val_loader
+
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
+        x, _ = batch
+        loss, _, _, _ = self.model(x)
+        self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"])
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        x, _ = batch
+        loss, _, _, _ = self.model(x)
+        self.log("val_loss", loss)
+    
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
+        x, _ = batch
+        loss, _, _, _ = self.model(x)
+        self.log("test_loss", loss)
+    
+    def configure_optimizers(self):
+        effective_batch_size = self.args.batch_size * self.trainer.accumulate_grad_batches
+        scaled_lr = self.args.lr * effective_batch_size / self.args.lr_batch_size
+
+        # Create explicit parameter groups to implement things like layer decay and no weight decay
+        params = make_param_groups(self.model, self.args.weight_decay, self.args.layer_decay)
+
+        # To add your own parameters, add a new group, e.g.,
+        # params.append({
+        #     "params": [p for p in self.my_downstream_model.parameters() if p.requires_grad],
+        #     "weight_decay": self.args.weight_decay,
+        #     "lr_scale": 1.0,
+        # })
+
+        optimizer = self.args.optimizer(
+            params,
+            lr = scaled_lr,
+            weight_decay = self.args.weight_decay
+        )
+
+        batches_per_epoch = self.trainer.estimated_stepping_batches / self.trainer.max_epochs
+        scheduler = self.args.make_lr_scheduler(optimizer, batches_per_epoch)
+
+        # Important to apply layer decay (applies lr_scale to each parameter group)
+        patch_lr_scheduler(scheduler)
+
+        return [optimizer], [{"scheduler": scheduler, "interval": "step"}]

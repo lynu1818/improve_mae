@@ -126,3 +126,11 @@ from .vit_mae import (
     mae_vit_large_512,
     MaskedAutoencoderViT
 )
+
+from .vit_emae import (
+    emae_vit_base_224,
+    emae_vit_large_224,
+    emae_vit_base_512,
+    emae_vit_large_512,
+    EfficientMaskedAutoencoderViT
+)

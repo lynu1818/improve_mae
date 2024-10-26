@@ -5,5 +5,5 @@
 # LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
 
-from .engine import MAEEngine, SupervisedEngine, reinit
+from .engine import MAEEngine, EMAEEngine, SupervisedEngine, reinit
 from . import config
