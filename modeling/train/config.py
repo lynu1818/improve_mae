@@ -330,21 +330,21 @@ class TrainArgs:
     mlp_dropout: float = 0.0          # Dropout rate for MLPs
     expert_dropout: float = 0.0  # [ADDED] Dropout rate for experts. Switch Transformers.
 
-    batch_size: int = 2      # TOTAL batch size across _all_ gpus
-    num_workers: int = 56
+    batch_size: int = 512      # TOTAL batch size across _all_ gpus
+    num_workers: int = 16
     prefetch_factor: int = 2
 
     # Batch size will be automatically split evenly among gpus*machines and lr will be scaled accordingly
     num_machines: int = 1     # Number of machines
-    num_gpus: int = 1         # Number of gpus per machine
+    num_gpus: int = 4         # Number of gpus per machine
 
     lr: float = 8e-4          # The global learning rate (i.e., if batch_size = lr_batch_size)
     lr_batch_size: int = 1024 # The batch size this learning rate was meant for
     
     optimizer: Optimizer = Optimizer.adamw()
 
-    epochs: int = 100
-    warmup_epochs: int = 5
+    epochs: int = 400
+    warmup_epochs: int = 40
 
     warmup_scheduler: LRScheduler = LRScheduler.linear(0.0, 1.0)
     lr_scheduler: LRScheduler = LRScheduler.cosine(0.0)
@@ -558,8 +558,8 @@ class TrainArgs:
         return cls(
             weight_decay=0.05,
             layer_decay=1.0,
-            batch_size=128,
-            lr=8e-4,
+            batch_size=32,
+            lr=1.5e-4,
             lr_batch_size=4096,
             warmup_epochs=40,
             mask_ratio=0.75,

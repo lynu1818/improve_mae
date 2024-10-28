@@ -20,6 +20,8 @@ from .vit_mae_util.pos_embed import get_2d_sincos_pos_embed
 from .hiera_utils import pretrained_model
 from .hfhub import has_config
 
+from torch.profiler import profile, ProfilerActivity, record_function
+
 class EfficientMaskedAutoencoderViT(nn.Module):
     """ Efficient Masked Autoencoder with VisionTransformer backbone
     EMAE: https://arxiv.org/abs/2302.14431
@@ -28,7 +30,7 @@ class EfficientMaskedAutoencoderViT(nn.Module):
     def __init__(self, model_name = '', input_size=(224, 224), patch_size=16, in_chans=3,
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
-                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False,
+                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=True,
                  drop_path_rate: float = 0.0):
         super().__init__()
 
@@ -158,8 +160,8 @@ class EfficientMaskedAutoencoderViT(nn.Module):
         ids_restore = torch.argsort(ids_shuffle, dim=1)
 
 
-        x_visible_patches = []
-        mask_strategies = []
+        x_visible_patches = torch.zeros((N, num_mask_strategy, len_keep, D), device=x.device)
+        mask_strategies = torch.ones((N, num_mask_strategy, L), device=x.device)
         
 
         # divide the whole data for different masking strategy
@@ -170,19 +172,17 @@ class EfficientMaskedAutoencoderViT(nn.Module):
             
             # Obtain the i-th visible patches
             ids_keep_i = ids_shuffle[:, start_idx:end_idx]
-            visible_patches = torch.gather(x, dim=1, index=ids_keep_i.unsqueeze(-1).repeat(1, 1, D))
-            x_visible_patches.append(visible_patches)
+            x_visible_patches[:, i] = torch.gather(x, dim=1, index=ids_keep_i.unsqueeze(-1).repeat(1, 1, D))
 
             # Obtain the i-th mask
             m_i = torch.ones([N, L], device=x.device)
             m_i[:, start_idx:end_idx] = 0
             # Unshuffle to get the binary mask
-            unshuffled_mask = torch.gather(m_i, dim=1, index=ids_restore)
-            mask_strategies.append(unshuffled_mask)
+            mask_strategies[:, i] = torch.gather(m_i, dim=1, index=ids_restore)
         
         
-        x_visible_patches = torch.stack(x_visible_patches, dim=1)
-        mask_strategies = torch.stack(mask_strategies, dim=1)
+        # x_visible_patches = torch.stack(x_visible_patches, dim=1)
+        # mask_strategies = torch.stack(mask_strategies, dim=1)
 
         # x_visible_patches: (N, K ,L//K, D)
         # mask_strategies: (N, K, L)
@@ -252,26 +252,18 @@ class EfficientMaskedAutoencoderViT(nn.Module):
         # print(f'self num patches: {self.num_patches}')
         
 
-        x_with_masks_list = []
-
-
+        x_with_masks = torch.zeros((N, K, self.num_patches, D), device=x_.device)
+        # print(f'x_with_mask shape: {x_with_masks.shape}')
+        
         for i in range(K):
             start_idx = i * L
             end_idx = (i + 1) * L
 
-            # Initialize full mask with zeros and insert visible patches
-            m_i = torch.zeros((N, self.num_patches, D))
-            # Insert patches visible for current strategy
-            m_i[:, start_idx:end_idx, :] = x_[:, i, :, :]
-            
-            x_with_masks_list.append(m_i)
+            x_with_masks[:, i, start_idx:end_idx, :] = x_[:, i, :, :]
 
-        # Stack all strategies: (N, K, L, D)
-        x_ = torch.stack(x_with_masks_list, dim=1)
-        # print(f'x_ shape1: {x_.shape}')
 
         # Reshape for transformer input: (N, K, L, D) -> (N * K, L, D)
-        x_ = x_.view(N * K, x_.shape[2], x_.shape[3])
+        x_ = x_with_masks.view(N * K, self.num_patches, D)
         # print(f'x_ shape2: {x_.shape}')
 
         # unshuffle
@@ -402,12 +394,37 @@ class EfficientMaskedAutoencoderViT(nn.Module):
 
 
     def forward(self, imgs, mask_ratio=0.75):
+        # with profile(
+        #     activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+        #     schedule=torch.profiler.schedule(wait=0, warmup=0, active=1),
+        #     on_trace_ready=trace_handler,
+        #     record_shapes=True
+        # ) as prof:
+        #     with record_function("encoder"):
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+            # with record_function("decoder"):
         pred = self.forward_decoder(latent, ids_restore)  # [N*K, L, p*p*3]
+            # with record_function("calculate loss"):
         loss = self.forward_loss(imgs, pred, mask)
-        
+            # prof.step()
+
         label = None
         return loss, pred, label, mask
+
+activities = [ProfilerActivity.CPU, ProfilerActivity.CUDA]
+sort_by_keyword = "self_cuda_time_total"
+
+def trace_handler(p):
+    output = p.key_averages().table(sort_by=sort_by_keyword, row_limit=10)
+    
+    print("Profiler output:", output)
+    
+    with open("/mnt/home/andyqmongo/lynu369/hiera_moe/profiler/profiler_output3.txt", "a") as f:
+        f.write("Step: " + str(p.step_num) + "\n")
+        f.write(output)
+        f.write("\n\n")
+
+    p.export_chrome_trace(f"/mnt/home/andyqmongo/lynu369/hiera_moe/profiler/trace_step_{p.step_num}.json")
 
 
 @pretrained_model({})

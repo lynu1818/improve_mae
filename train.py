@@ -19,6 +19,7 @@ import argparse
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import WandbLogger
 from pytorch_lightning.profiler import SimpleProfiler
+from lightning.pytorch.strategies import DDPStrategy
 
 def train(model_name: str,
           config_name: str,
@@ -35,7 +36,7 @@ def train(model_name: str,
 
     torch.set_float32_matmul_precision('medium')
     if "emae" in config_name:
-        model = getattr(modeling, f"emae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
+        model = getattr(modeling, f"emae_{model_name}")(pretrained=False, model_name=f"emae_{model_name}")
         engine = modeling.train.EMAEEngine(model, args)
     elif "mae" in config_name:
         model = getattr(modeling, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
@@ -73,7 +74,7 @@ def train(model_name: str,
         save_weights_only=False,
     )
     if log_wandb:
-        logger = WandbLogger(project=f'Hiera_{config_name}', save_dir=args.log_path)
+        logger = WandbLogger(project=f'in1k_emae', save_dir=args.log_path, entity='nthu-HiRes-MAE')
     else:
         logger = False
 
@@ -91,13 +92,14 @@ def train(model_name: str,
 
         devices=args.num_gpus,
         num_nodes=args.num_machines,
-        strategy=strategy if args.num_gpus * args.num_machines > 1 else "auto",
+        # strategy=strategy if args.num_gpus * args.num_machines > 1 else "auto",
 
         default_root_dir=args.log_path,
         logger=logger,
         callbacks=[ckpt_callback, ckpt_callback_save_whole],
         benchmark=True,
         #profiler=profiler
+        strategy=DDPStrategy(find_unused_parameters=True),
     )
 
     torch.cuda.empty_cache()

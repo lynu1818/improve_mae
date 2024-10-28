@@ -22,7 +22,7 @@ from .utils import make_param_groups, patch_lr_scheduler
 
 from timm.utils import accuracy
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
-
+from torch.profiler import profile, ProfilerActivity
 
 def reinit(cls, model: nn.Module, **kwdargs):
     """
@@ -208,6 +208,15 @@ class MAEEngine(L.LightningModule):
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
 
+activities = [ProfilerActivity.CPU, ProfilerActivity.CUDA]
+sort_by_keyword = "self_cuda_time_total"
+
+def trace_handler(p):
+    output = p.key_averages().table(sort_by=sort_by_keyword, row_limit=10)
+    print("Profiler output:", output)
+    p.export_chrome_trace(f"/mnt/home/andyqmongo/lynu369/hiera_moe/profiler/trace_step_{p.step_num}.json")
+
+
 class EMAEEngine(L.LightningModule):
     
     def __init__(self, model: EfficientMaskedAutoencoderViT, args: config.TrainArgs, **kwargs):
@@ -228,10 +237,18 @@ class EMAEEngine(L.LightningModule):
     
     def test_dataloader(self) -> torch.Any:
         return self.val_loader
-
+    
+    
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
+        # with profile(
+        #     activities=activities,
+        #     schedule=torch.profiler.schedule(wait=0, warmup=0, active=1),
+        #     on_trace_ready=trace_handler,
+        #     record_shapes=True
+        # ) as p:
         x, _ = batch
         loss, _, _, _ = self.model(x)
+            # p.step()
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"])
         self.log("train_loss", loss)
         return loss
