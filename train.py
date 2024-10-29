@@ -74,7 +74,7 @@ def train(model_name: str,
         save_weights_only=False,
     )
     if log_wandb:
-        logger = WandbLogger(project=f'in1k_emae', save_dir=args.log_path, entity='nthu-HiRes-MAE')
+        logger = WandbLogger(project=f'new-{config_name}', save_dir=args.log_path, entity='nthu-HiRes-MAE')
     else:
         logger = False
 
@@ -99,7 +99,7 @@ def train(model_name: str,
         callbacks=[ckpt_callback, ckpt_callback_save_whole],
         benchmark=True,
         #profiler=profiler
-        strategy=DDPStrategy(find_unused_parameters=True),
+        strategy=DDPStrategy(find_unused_parameters=False),
     )
 
     torch.cuda.empty_cache()

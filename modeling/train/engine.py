@@ -164,19 +164,19 @@ class MAEEngine(L.LightningModule):
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         x, _ = batch
-        loss, _, _, _ = self.model(x)
+        loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"])
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         x, _ = batch
-        loss, _, _, _ = self.model(x)
+        loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
         self.log("val_loss", loss)
     
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         x, _ = batch
-        loss, _, _, _ = self.model(x)
+        loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
         self.log("test_loss", loss)
     
     def configure_optimizers(self):
@@ -247,7 +247,7 @@ class EMAEEngine(L.LightningModule):
         #     record_shapes=True
         # ) as p:
         x, _ = batch
-        loss, _, _, _ = self.model(x)
+        loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
             # p.step()
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"])
         self.log("train_loss", loss)
@@ -255,12 +255,12 @@ class EMAEEngine(L.LightningModule):
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         x, _ = batch
-        loss, _, _, _ = self.model(x)
+        loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
         self.log("val_loss", loss)
     
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         x, _ = batch
-        loss, _, _, _ = self.model(x)
+        loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
         self.log("test_loss", loss)
     
     def configure_optimizers(self):

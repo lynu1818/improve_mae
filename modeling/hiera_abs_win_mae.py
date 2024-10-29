@@ -282,7 +282,7 @@ class MaskedAutoencoderHieraAbsWin(HieraAbsWin):
     def forward(
         self,
         x: torch.Tensor,
-        mask_ratio: float = 0.6,
+        mask_ratio: float,
         mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
 
@@ -544,10 +544,9 @@ class MaskedAutoencoderHieraAbsWinSTMoE(HieraAbsWinSTMoE):
     def forward(
         self,
         x: torch.Tensor,
-        mask_ratio: float = 0.6,
+        mask_ratio: float,
         mask: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-
         latent, mask = self.forward_encoder(x, mask_ratio, mask=mask)
         pred, pred_mask = self.forward_decoder(
             latent, mask

@@ -230,7 +230,7 @@ class MaskedAutoencoderViT(nn.Module):
         loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
         return loss
 
-    def forward(self, imgs, mask_ratio=0.75):
+    def forward(self, imgs, mask_ratio):
         with self.profiler.profile('encoder'):
             latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
         with self.profiler.profile('decoder'):
