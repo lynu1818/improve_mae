@@ -36,11 +36,13 @@ def reinit(cls, model: nn.Module, **kwdargs):
 
 class SupervisedEngine(L.LightningModule):
     
-    def __init__(self, model: Hiera | HieraSTMoE | VisionTransformer, args: config.TrainArgs, **kwargs):
+    def __init__(self, model: Hiera | HieraSTMoE | VisionTransformer, args: config.TrainArgs, torch_compile: bool, **kwargs):
         super().__init__(**kwargs)
 
         self.args = args
         self.model = reinit(type(model), model, drop_path_rate=args.drop_path)
+        if torch_compile:
+            self.model = torch.compile(self.model, mode='reduce-overhead')
 
         self.save_hyperparameters({"model": model.config, "args": args.save()})
 
@@ -143,12 +145,15 @@ class SupervisedEngine(L.LightningModule):
 
 class MAEEngine(L.LightningModule):
     
-    def __init__(self, model: MaskedAutoencoderHiera | MaskedAutoencoderHieraSTMoE | MaskedAutoencoderViT, args: config.TrainArgs, **kwargs):
+    def __init__(self, model: MaskedAutoencoderHiera | MaskedAutoencoderHieraSTMoE | MaskedAutoencoderViT,
+                 args: config.TrainArgs, torch_compile: bool, **kwargs):
         super().__init__(**kwargs)
 
         self.args = args
 
         self.model = reinit(type(model), model, drop_path_rate=args.drop_path)
+        if torch_compile:
+            self.model = torch.compile(self.model, mode='reduce-overhead')
         self.save_hyperparameters({"model": model.config, "args": args.save()})
 
         self.train_loader, self.val_loader = args.make_dataloaders(model.input_size[-1])
@@ -219,12 +224,14 @@ def trace_handler(p):
 
 class EMAEEngine(L.LightningModule):
     
-    def __init__(self, model: EfficientMaskedAutoencoderViT, args: config.TrainArgs, **kwargs):
+    def __init__(self, model: EfficientMaskedAutoencoderViT, args: config.TrainArgs, torch_compile: bool, **kwargs):
         super().__init__(**kwargs)
 
         self.args = args
 
         self.model = reinit(type(model), model, drop_path_rate=args.drop_path)
+        if torch_compile:
+            self.model = torch.compile(self.model, mode='reduce-overhead')
         self.save_hyperparameters({"model": model.config, "args": args.save()})
 
         self.train_loader, self.val_loader = args.make_dataloaders(model.input_size[-1])

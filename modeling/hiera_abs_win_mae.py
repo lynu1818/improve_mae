@@ -575,6 +575,12 @@ def mae_hiera_abs_win_base_plus_224(**kwargs):
     )
 
 @pretrained_model({})
+def mae_hiera_abs_win_base_plus_448(**kwargs):
+    return MaskedAutoencoderHieraAbsWin(
+        embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), q_pool=2, input_size=(448, 448), **kwargs,
+    )
+
+@pretrained_model({})
 def mae_hiera_abs_win_base_plus_512(**kwargs):
     return MaskedAutoencoderHieraAbsWin(
         embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), q_pool=2, input_size=(512, 512), **kwargs,

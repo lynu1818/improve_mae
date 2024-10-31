@@ -89,6 +89,7 @@ from .hiera_abs_win import (
     hiera_abs_win_tiny_224,
     hiera_abs_win_tiny_512,
     hiera_abs_win_base_plus_224,
+    hiera_abs_win_base_plus_448,
     hiera_abs_win_base_plus_512,
 
     hiera_abs_win_tiny_224_st_moe_0011_50p,
@@ -101,6 +102,7 @@ from .hiera_abs_win_mae import (
     mae_hiera_abs_win_tiny_224,
     mae_hiera_abs_win_tiny_512,
     mae_hiera_abs_win_base_plus_224,
+    mae_hiera_abs_win_base_plus_448,
     mae_hiera_abs_win_base_plus_512,
 
     mae_hiera_abs_win_tiny_224_st_moe_0011_50p,
@@ -113,6 +115,8 @@ from .vit import (
     vit_base_224,
     vit_large_224,
     vit_huge_224,
+    vit_base_448,
+    vit_large_448,
     vit_base_512,
     vit_large_512,
     VisionTransformer,
@@ -122,6 +126,8 @@ from .vit_mae import (
     mae_vit_base_224,
     mae_vit_large_224,
     mae_vit_huge_224,
+    mae_vit_base_448,
+    mae_vit_large_448,
     mae_vit_base_512,
     mae_vit_large_512,
     MaskedAutoencoderViT
@@ -130,6 +136,8 @@ from .vit_mae import (
 from .vit_emae import (
     emae_vit_base_224,
     emae_vit_large_224,
+    emae_vit_base_448,
+    emae_vit_large_448,
     emae_vit_base_512,
     emae_vit_large_512,
     EfficientMaskedAutoencoderViT

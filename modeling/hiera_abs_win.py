@@ -881,6 +881,10 @@ def hiera_abs_win_base_plus_224(**kwdargs):
     return HieraAbsWin(embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), **kwdargs)
 
 @pretrained_model({})
+def hiera_abs_win_base_plus_448(**kwdargs):
+    return HieraAbsWin(embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), input_size=(448, 448), **kwdargs)
+
+@pretrained_model({})
 def hiera_abs_win_base_plus_512(**kwdargs):
     return HieraAbsWin(embed_dim=112, num_heads=2, stages=(2, 3, 16, 3), input_size=(512, 512), **kwdargs)
 

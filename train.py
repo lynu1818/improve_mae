@@ -37,10 +37,10 @@ def train(model_name: str,
     torch.set_float32_matmul_precision('medium')
     if "emae" in config_name:
         model = getattr(modeling, f"emae_{model_name}")(pretrained=False, model_name=f"emae_{model_name}")
-        engine = modeling.train.EMAEEngine(model, args)
+        engine = modeling.train.EMAEEngine(model, args, torch_compile)
     elif "mae" in config_name:
         model = getattr(modeling, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
-        engine = modeling.train.MAEEngine(model, args)
+        engine = modeling.train.MAEEngine(model, args, torch_compile)
     else:
         model = getattr(modeling, model_name)(
             # Temporary, replace with loading from a checkpoint
@@ -53,10 +53,7 @@ def train(model_name: str,
             mlp_dropout=args.mlp_dropout,
             expert_dropout=args.expert_dropout,
         )
-        engine = modeling.train.SupervisedEngine(model, args)
-
-    if torch_compile:
-        engine = torch.compile(engine, mode="reduce-overhead")
+        engine = modeling.train.SupervisedEngine(model, args, torch_compile)
 
     ckpt_callback = ModelCheckpoint(
         filename='epoch-{epoch}',
