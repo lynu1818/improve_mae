@@ -169,6 +169,13 @@ class MAEEngine(L.LightningModule):
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
         x, _ = batch
+        # =================
+        # x = torch.randn(x.size())
+        # import time
+        # start = time.time()
+        # loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
+        # end = time.time()
+        # =================
         loss, _, _, _ = self.model.forward(x, mask_ratio=self.args.mask_ratio)
         self.log("lr", self.trainer.optimizers[0].param_groups[0]["lr"])
         self.log("train_loss", loss)
@@ -212,15 +219,6 @@ class MAEEngine(L.LightningModule):
         patch_lr_scheduler(scheduler)
 
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
-
-
-activities = [ProfilerActivity.CPU, ProfilerActivity.CUDA]
-sort_by_keyword = "self_cuda_time_total"
-
-def trace_handler(p):
-    output = p.key_averages().table(sort_by=sort_by_keyword, row_limit=10)
-    print("Profiler output:", output)
-    p.export_chrome_trace(f"/mnt/home/andyqmongo/lynu369/hiera_moe/profiler/trace_step_{p.step_num}.json")
 
 
 class EMAEEngine(L.LightningModule):

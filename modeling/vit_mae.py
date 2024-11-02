@@ -20,7 +20,6 @@ from .vit_mae_util.pos_embed import get_2d_sincos_pos_embed
 from .hiera_utils import pretrained_model
 from .hfhub import has_config
 
-from pytorch_lightning.profiler import PassThroughProfiler
 
 class MaskedAutoencoderViT(nn.Module):
     """ Masked Autoencoder with VisionTransformer backbone
@@ -30,12 +29,8 @@ class MaskedAutoencoderViT(nn.Module):
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
                  mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False,
-                 drop_path_rate: float = 0.0, profiler = None):
+                 drop_path_rate: float = 0.0):
         super().__init__()
-        if profiler is None:
-            self.profiler = PassThroughProfiler()
-        else:
-            self.profiler = profiler
 
         self.model_name = model_name
         img_size = input_size[0]
@@ -231,12 +226,9 @@ class MaskedAutoencoderViT(nn.Module):
         return loss
 
     def forward(self, imgs, mask_ratio):
-        with self.profiler.profile('encoder'):
-            latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
-        with self.profiler.profile('decoder'):
-            pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
-        with self.profiler.profile('loss'):
-            loss = self.forward_loss(imgs, pred, mask)
+        latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+        pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
+        loss = self.forward_loss(imgs, pred, mask)
         
         label = None
         return loss, pred, label, mask
