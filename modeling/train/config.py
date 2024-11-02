@@ -302,7 +302,7 @@ class Dataset:
             dataset = datasets.ImageNet(self.path, "train" if train else "val", transform=transform)
         else:
             raise ValueError(f"Unknown dataset type {self.type}.")
-
+        print('Dataset prepared')
         return dataset
 
 
@@ -336,7 +336,7 @@ class TrainArgs:
 
     # Batch size will be automatically split evenly among gpus*machines and lr will be scaled accordingly
     num_machines: int = 1     # Number of machines
-    num_gpus: int = 4         # Number of gpus per machine
+    num_gpus: int = 1         # Number of gpus per machine
 
     lr: float = 8e-4          # The global learning rate (i.e., if batch_size = lr_batch_size)
     lr_batch_size: int = 1024 # The batch size this learning rate was meant for
@@ -514,9 +514,67 @@ class TrainArgs:
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
-            
             **args[model]
         )
+
+    @classmethod
+    def in1k_mae_plus(cls, model: str):
+        args = {
+            "hiera_tiny_224":      {"lr": 8e-4, "drop_path": 0.0 },
+            "hiera_small_224":     {"lr": 8e-4, "drop_path": 0.0 },
+            "hiera_base_224":      {"lr": 8e-4, "drop_path": 0.2 },
+            "hiera_base_plus_224": {"lr": 8e-4, "drop_path": 0.2 },
+            "hiera_large_224":     {"lr": 8e-4, "drop_path": 0.2 },
+            "hiera_huge_224":      {"lr": 8e-4, "drop_path": 0.3 },
+
+            "hiera_tiny_224_st_moe_0001":          {"lr": 8e-4, "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_50p":           {"lr": 8e-4, "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_0011_50p":      {"lr": 8e-4, "drop_path": 0.0 },
+
+            "hiera_tiny_512":                      {"lr": 8e-4, "drop_path": 0.1 },
+            "hiera_tiny_512_st_moe_0011_50p":      {"lr": 8e-4, "drop_path": 0.1 },
+            "hiera_base_plus_512":                 {"lr": 8e-4, "drop_path": 0.3 },
+            "hiera_base_plus_512_st_moe_0011_50p": {"lr": 8e-4, "drop_path": 0.3 },
+
+            "hieradet_tiny_224": {"lr": 8e-4,"drop_path": 0.0},
+            "hiera_abs_win_tiny_224": {"lr": 8e-4,"drop_path": 0.0},
+            "hiera_abs_win_tiny_224_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.0},
+            "hiera_abs_win_tiny_512": {"lr": 8e-4,"drop_path": 0.0},
+            "hiera_abs_win_tiny_512_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.0},
+
+
+            "hiera_abs_win_base_plus_224": {"lr": 8e-4, "drop_path": 0.2},
+            "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.2},
+            "hiera_abs_win_base_plus_512": {"lr": 8e-4,"drop_path": 0.2},
+            "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.2},
+
+            "vit_base_224": { "lr": 1.5e-4, "drop_path": 0.0},
+            "vit_large_224": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_huge_224": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_base_448": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_large_448": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_base_512": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_large_512": {"lr": 1.5e-4, "drop_path": 0.0},
+
+        }
+
+        if model not in args:
+            raise ValueError(f"Unknown model {model} for MAE Plus training.")
+
+        return cls(
+            weight_decay=0.05,
+            layer_decay=1.0,
+            batch_size=128,
+            lr_batch_size=4096,
+            warmup_epochs=40,
+            mask_ratio=0.6,
+            epochs=400,
+
+            dataset=Dataset(augmentations = Augmentations.mae()),
+            optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
+            **args[model]
+        )
+
     @classmethod
     def in1k_emae(cls, model: str):
         args = {
@@ -574,7 +632,6 @@ class TrainArgs:
 
             dataset=Dataset(augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
-            
             **args[model]
         )
 
@@ -635,6 +692,5 @@ class TrainArgs:
 
             dataset=Dataset(type='sa1b', augmentations = Augmentations.mae()),
             optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
-            
             **args[model]
         )

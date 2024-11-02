@@ -86,25 +86,24 @@ class MaskedAutoencoderPlusViT(nn.Module):
         # --------------------------------------------------------------------------
         # MAE decoder specifics
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
-
-        self.mask_token = nn.Parameter(torch.zeros(1, 1, decoder_embed_dim))
-
         self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # fixed sin-cos embedding
 
         self.decoder_blocks = nn.ModuleList([
             Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(decoder_depth)])
 
-        if input_size == 224:
+        if img_size == 224:
             self.decoder_upsample_layers = nn.ModuleDict({
                 str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
             })
-        elif input_size == 448:
+        elif img_size == 448:
             self.decoder_upsample_layers = nn.ModuleDict({
                 str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
                 str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2)
 
             })
+        else:
+            raise NotImplementedError(f"Unsupported input size: {img_size}")
 
         self.decoder_norm = norm_layer(decoder_embed_dim)
         self.decoder_pred = nn.Linear(decoder_embed_dim, patch_size**2 * in_chans, bias=True) # decoder to patch
@@ -129,7 +128,6 @@ class MaskedAutoencoderPlusViT(nn.Module):
 
         # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
         torch.nn.init.normal_(self.cls_token, std=.02)
-        torch.nn.init.normal_(self.mask_token, std=.02)
 
         # initialize nn.Linear and nn.LayerNorm
         self.apply(self._init_weights)
@@ -242,10 +240,12 @@ class MaskedAutoencoderPlusViT(nn.Module):
         x = x + aligned_pos_embed
 
         # apply Transformer blocks
-        for blk_id, blk in enumerate(self.decoder_blocks):
-            if str(blk_id) in self.decoder_upsample_layers:
-                x = self.decoder_upsample_layers[str(blk_id)](x)
+        i = 0
+        for blk in self.decoder_blocks:
+            if str(i) in self.decoder_upsample_layers:
+                x = self.decoder_upsample_layers[str(i)](x)
             x = blk(x)
+            i += 1
         x = self.decoder_norm(x)
 
         # predictor projection
@@ -313,17 +313,17 @@ def mae_plus_vit_huge_224(**kwargs):
     return model
 
 @pretrained_model({})
-def mae_plus_vit_base_512(**kwargs):
+def mae_plus_vit_base_448(**kwargs):
     model = MaskedAutoencoderPlusViT(
-        input_size=(512, 512), patch_size=16, embed_dim=768, depth=12, num_heads=12,
+        input_size=(448, 448), patch_size=16, embed_dim=768, depth=12, num_heads=12,
         decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
         mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model
 
 @pretrained_model({})
-def mae_plus_vit_large_512(**kwargs):
+def mae_plus_vit_large_448(**kwargs):
     model = MaskedAutoencoderPlusViT(
-        input_size=(512, 512), patch_size=16, embed_dim=1024, depth=24, num_heads=16,
+        input_size=(448, 448), patch_size=16, embed_dim=1024, depth=24, num_heads=16,
         decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
         mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model

@@ -38,6 +38,9 @@ def train(model_name: str,
     if "emae" in config_name:
         model = getattr(modeling, f"emae_{model_name}")(pretrained=False, model_name=f"emae_{model_name}")
         engine = modeling.train.EMAEEngine(model, args, torch_compile)
+    elif "mae_plus" in config_name:
+        model = getattr(modeling, f"mae_plus_{model_name}")(pretrained=False, model_name=f"mae_plus_{model_name}")
+        engine = modeling.train.MAEEngine(model, args, torch_compile)
     elif "mae" in config_name:
         model = getattr(modeling, f"mae_{model_name}")(pretrained=False, model_name=f"mae_{model_name}")
         engine = modeling.train.MAEEngine(model, args, torch_compile)
