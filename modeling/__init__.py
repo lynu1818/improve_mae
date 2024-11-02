@@ -134,3 +134,10 @@ from .vit_emae import (
     emae_vit_large_512,
     EfficientMaskedAutoencoderViT
 )
+
+from .vit_mae_plus import (
+    mae_plus_vit_base_224,
+    mae_plus_vit_large_224,
+    mae_plus_vit_base_448,
+    mae_plus_vit_large_448,
+)
