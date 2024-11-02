@@ -180,23 +180,9 @@ class EfficientMaskedAutoencoderViT(nn.Module):
             # Unshuffle to get the binary mask
             mask_strategies[:, i] = torch.gather(m_i, dim=1, index=ids_restore)
         
-        
-        # x_visible_patches = torch.stack(x_visible_patches, dim=1)
-        # mask_strategies = torch.stack(mask_strategies, dim=1)
-
-        # x_visible_patches: (N, K ,L//K, D)
-        # mask_strategies: (N, K, L)
-        # ids_restore: (N, L)
-        # print(f'random masking:')
-        # print(f'N: {N}, K: {num_mask_strategy}, L: {L}, L//K: {L//num_mask_strategy}, D: {D}')
-        # print(f' x visible patches shape: {x_visible_patches.shape}')
-        # print(f' mask_strategies shape: {mask_strategies.shape}')
-        # print(f' ids_restore shape: {ids_restore.shape}')
         return x_visible_patches, mask_strategies, ids_restore
 
     def forward_encoder(self, x, mask_ratio):
-        # print(f'forward encdoer')
-        # print(f'x shape: {x.shape}, mask ratio: {mask_ratio}')
         # embed patches
         x = self.patch_embed(x)
 
@@ -234,42 +220,29 @@ class EfficientMaskedAutoencoderViT(nn.Module):
 
         Returns:
             torch.Tensor: Decoded tensor after transformer processing, shape [N, K, L, D].
-        """
-        # print(f'forward decoder')
-        # print(f'x shape: {x.shape}, ids_restore shape: {ids_restore.shape}')
-        
+        """        
         # embed tokens
         x = self.decoder_embed(x)
 
-
         # delete cls token
         x_ = x[:, :, 1:, :]
-
         N, K, L, D = x_.shape
-        # print(f'x_ shape: {x_.shape}')
-        ids_restore = ids_restore.repeat_interleave(K, dim=0)
-        # print(f'new ids restore shape: {ids_restore.shape}')
-        # print(f'self num patches: {self.num_patches}')
-        
 
-        x_with_masks = torch.zeros((N, K, self.num_patches, D), device=x_.device)
-        # print(f'x_with_mask shape: {x_with_masks.shape}')
+        ids_restore = ids_restore.repeat_interleave(K, dim=0)
         
+        x_with_masks = torch.zeros((N, K, self.num_patches, D), device=x_.device)
+
         for i in range(K):
             start_idx = i * L
             end_idx = (i + 1) * L
 
             x_with_masks[:, i, start_idx:end_idx, :] = x_[:, i, :, :]
 
-
         # Reshape for transformer input: (N, K, L, D) -> (N * K, L, D)
         x_ = x_with_masks.view(N * K, self.num_patches, D)
-        # print(f'x_ shape2: {x_.shape}')
 
         # unshuffle
         x_ = torch.gather(x_, dim=1, index=ids_restore.unsqueeze(-1).repeat(1, 1, D).to(x_.device))
-        # print(f'x_ shape3: {x_.shape}')
-        # print(f'decoder pos embed shape: {self.decoder_pos_embed.shape}')
 
         x_ = x_.to(x.device)
         x = x.view(N * K, L + 1, D)
@@ -323,6 +296,7 @@ class EfficientMaskedAutoencoderViT(nn.Module):
 
         # Only consider pairs where i < j to avoid double-counting pairs
         triu_indices = torch.triu_indices(K, K, offset=1)
+
         final_loss = consistency_loss[:, triu_indices[0], triu_indices[1]].mean()
 
         return final_loss
@@ -366,10 +340,6 @@ class EfficientMaskedAutoencoderViT(nn.Module):
         # [N, L, p*p*3] -> [N * K, L, p*p*3]
         target = target.unsqueeze(1).expand(N, K, L, -1).reshape(N * K, L, -1)  
 
-        # print(f'forward loss')
-        # print(f'target shape: {target.shape}, pred shape: {pred.shape}, mask shape: {mask.shape}')
-
-
         if self.norm_pix_loss:
             mean = target.mean(dim=-1, keepdim=True)
             var = target.var(dim=-1, keepdim=True)
@@ -379,13 +349,13 @@ class EfficientMaskedAutoencoderViT(nn.Module):
         loss_whole = (pred - target) ** 2
         loss_whole = loss_whole.mean(dim=-1)  # [N, L], mean loss per patch
         mask = mask.view(N * K, L)
-        # print(f'new mask shape: {mask.shape}')
+
         loss_whole = (loss_whole * mask).sum() / mask.sum()  # mean loss on removed patches
         
         mask = mask.view(N, K, L)
         sij = self.calculate_sij(mask)
         pred = pred.view(N, K, L, -1) # Reshape pred to [N, K, L, D]
-        # print(f'new pred shape: {pred.shape}')
+
         loss_consistency = self.self_consistency_loss(pred, sij)
 
         total_loss = loss_whole + loss_consistency
@@ -439,6 +409,22 @@ def emae_vit_base_224(**kwargs):
 def emae_vit_large_224(**kwargs):
     model = EfficientMaskedAutoencoderViT(
         patch_size=16, embed_dim=1024, depth=24, num_heads=16,
+        decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
+        mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+    return model
+
+@pretrained_model({})
+def emae_vit_base_448(**kwargs):
+    model = EfficientMaskedAutoencoderViT(
+        input_size=(448, 448), patch_size=16, embed_dim=768, depth=12, num_heads=12,
+        decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
+        mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+    return model
+
+@pretrained_model({})
+def emae_vit_large_448(**kwargs):
+    model = EfficientMaskedAutoencoderViT(
+        input_size=(448, 448), patch_size=16, embed_dim=1024, depth=24, num_heads=16,
         decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
         mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
     return model

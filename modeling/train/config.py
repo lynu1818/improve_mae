@@ -429,12 +429,15 @@ class TrainArgs:
 
             "hiera_abs_win_base_plus_224":                 { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             "hiera_abs_win_base_plus_224_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
+            "hiera_abs_win_base_plus_448":                 { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             "hiera_abs_win_base_plus_512":                 { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             "hiera_abs_win_base_plus_512_st_moe_0011_50p": { "lr": 1e-3, "epochs": 100, "drop_path": 0.1, "layer_decay": 0.7  },
             
             "vit_base_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.7 },
             "vit_large_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.75  },
             "vit_huge_224": { "lr": 1e-3, "epochs": 300, "drop_path": 0.3, "layer_decay": 0.7  },
+            "vit_base_448": { "lr": 1e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.7  },
+            "vit_large_448": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.75  },
             "vit_base_512": { "lr": 1e-3, "epochs": 300, "drop_path": 0.1, "layer_decay": 0.7  },
             "vit_large_512": { "lr": 1e-3, "epochs": 300, "drop_path": 0.2, "layer_decay": 0.75  },
         }
@@ -490,6 +493,8 @@ class TrainArgs:
             "vit_base_224": { "lr": 1.5e-4, "drop_path": 0.0},
             "vit_large_224": {"lr": 1.5e-4, "drop_path": 0.0},
             "vit_huge_224": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_base_448": {"lr": 1.5e-4, "drop_path": 0.0},
+            "vit_large_448": {"lr": 1.5e-4, "drop_path": 0.0},
             "vit_base_512": {"lr": 1.5e-4, "drop_path": 0.0},
             "vit_large_512": {"lr": 1.5e-4, "drop_path": 0.0},
 
@@ -540,12 +545,15 @@ class TrainArgs:
 
             "hiera_abs_win_base_plus_224": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_448": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"drop_path": 0.2},
 
             "vit_base_224": {"drop_path": 0.1},
             "vit_large_224": {"drop_path": 0.1},
             "vit_huge_224": {"drop_path": 0.1},
+            "vit_base_448": {"drop_path": 0.1},
+            "vit_large_448": {"drop_path": 0.1},
             "vit_base_512": {"drop_path": 0.1},
             "vit_large_512": {"drop_path": 0.1},
 
@@ -598,12 +606,15 @@ class TrainArgs:
 
             "hiera_abs_win_base_plus_224": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_448": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"drop_path": 0.2},
 
             "vit_base_224": {"drop_path": 0.1},
             "vit_large_224": {"drop_path": 0.1},
             "vit_huge_224": {"drop_path": 0.1},
+            "vit_base_448": {"drop_path": 0.1},
+            "vit_base_448": {"drop_path": 0.1},
             "vit_base_512": {"drop_path": 0.1},
             "vit_large_512": {"drop_path": 0.1},
 
