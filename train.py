@@ -35,7 +35,10 @@ def train(model_name: str,
         os.makedirs(save_whole_path, exist_ok=True)
 
     torch.set_float32_matmul_precision('medium')
-    if "emae" in config_name:
+    if "emae_plus" in config_name:
+        model = getattr(modeling, f"emae_plus_{model_name}")(pretrained=False, model_name=f"emae_plus_{model_name}")
+        engine = modeling.train.EMAEEngine(model, args, torch_compile)
+    elif "emae" in config_name:
         model = getattr(modeling, f"emae_{model_name}")(pretrained=False, model_name=f"emae_{model_name}")
         engine = modeling.train.EMAEEngine(model, args, torch_compile)
     elif "mae_plus" in config_name:

@@ -636,6 +636,66 @@ class TrainArgs:
         )
 
     @classmethod
+    def in1k_emae_plus(cls, model: str):
+        args = {
+            "hiera_tiny_224":      { "drop_path": 0.0 },
+            "hiera_small_224":     { "drop_path": 0.0 },
+            "hiera_base_224":      { "drop_path": 0.2 },
+            "hiera_base_plus_224": { "drop_path": 0.2 },
+            "hiera_large_224":     { "drop_path": 0.2 },
+            "hiera_huge_224":      { "drop_path": 0.3 },
+
+            "hiera_tiny_224_st_moe_0001":          { "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
+            "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
+
+            "hiera_tiny_512":                      { "drop_path": 0.1 },
+            "hiera_tiny_512_st_moe_0011_50p":      { "drop_path": 0.1 },
+            "hiera_base_plus_512":                 { "drop_path": 0.3 },
+            "hiera_base_plus_512_st_moe_0011_50p": { "drop_path": 0.3 },
+
+            "hieradet_tiny_224": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_224": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_224_st_moe_0011_50p": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_512": {"drop_path": 0.0},
+            "hiera_abs_win_tiny_512_st_moe_0011_50p": {"drop_path": 0.0},
+
+
+            "hiera_abs_win_base_plus_224": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_448": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_512": {"drop_path": 0.2},
+            "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"drop_path": 0.2},
+
+            "vit_base_224": {"drop_path": 0.1},
+            "vit_large_224": {"drop_path": 0.1},
+            "vit_huge_224": {"drop_path": 0.1},
+            "vit_base_448": {"drop_path": 0.1},
+            "vit_large_448": {"drop_path": 0.1},
+            "vit_base_512": {"drop_path": 0.1},
+            "vit_large_512": {"drop_path": 0.1},
+
+        }
+
+        if model not in args:
+            raise ValueError(f"Unknown model {model} for MAE training.")
+
+        return cls(
+            weight_decay=0.05,
+            layer_decay=1.0,
+            batch_size=32,
+            lr=1.5e-4,
+            lr_batch_size=4096,
+            warmup_epochs=40,
+            mask_ratio=0.75,
+            epochs=400,
+
+            dataset=Dataset(augmentations = Augmentations.mae()),
+            optimizer=Optimizer.adamw(beta1=0.9, beta2=0.95),
+            **args[model]
+        )
+
+    @classmethod
     def sa1b_mae(cls, model: str):
         args = {
             "hiera_tiny_224":      { "drop_path": 0.0 },
