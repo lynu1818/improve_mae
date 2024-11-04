@@ -469,6 +469,8 @@ class TrainArgs:
             "hiera_large_224":     {"lr": 8e-4, "drop_path": 0.2 },
             "hiera_huge_224":      {"lr": 8e-4, "drop_path": 0.3 },
 
+            "hiera_base_plus_448": {"lr": 8e-4, "drop_path": 0.2 },
+
             "hiera_tiny_224_st_moe_0001":          {"lr": 8e-4, "drop_path": 0.0 },
             "hiera_tiny_224_st_moe_50p":           {"lr": 8e-4, "drop_path": 0.0 },
             "hiera_tiny_224_st_moe_0011_50p":      {"lr": 8e-4, "drop_path": 0.0 },
@@ -487,6 +489,7 @@ class TrainArgs:
 
             "hiera_abs_win_base_plus_224": {"lr": 8e-4, "drop_path": 0.2},
             "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.2},
+            "hiera_abs_win_base_plus_448": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512": {"lr": 8e-4,"drop_path": 0.2},
             "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.2},
 
@@ -526,27 +529,19 @@ class TrainArgs:
             "hiera_base_plus_224": {"lr": 8e-4, "drop_path": 0.2 },
             "hiera_large_224":     {"lr": 8e-4, "drop_path": 0.2 },
             "hiera_huge_224":      {"lr": 8e-4, "drop_path": 0.3 },
-
-            "hiera_tiny_224_st_moe_0001":          {"lr": 8e-4, "drop_path": 0.0 },
-            "hiera_tiny_224_st_moe_50p":           {"lr": 8e-4, "drop_path": 0.0 },
-            "hiera_tiny_224_st_moe_0011_50p":      {"lr": 8e-4, "drop_path": 0.0 },
+            "hiera_base_plus_448": {"lr": 8e-4, "drop_path": 0.2 },
 
             "hiera_tiny_512":                      {"lr": 8e-4, "drop_path": 0.1 },
-            "hiera_tiny_512_st_moe_0011_50p":      {"lr": 8e-4, "drop_path": 0.1 },
             "hiera_base_plus_512":                 {"lr": 8e-4, "drop_path": 0.3 },
-            "hiera_base_plus_512_st_moe_0011_50p": {"lr": 8e-4, "drop_path": 0.3 },
 
             "hieradet_tiny_224": {"lr": 8e-4,"drop_path": 0.0},
             "hiera_abs_win_tiny_224": {"lr": 8e-4,"drop_path": 0.0},
-            "hiera_abs_win_tiny_224_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.0},
             "hiera_abs_win_tiny_512": {"lr": 8e-4,"drop_path": 0.0},
-            "hiera_abs_win_tiny_512_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.0},
 
 
             "hiera_abs_win_base_plus_224": {"lr": 8e-4, "drop_path": 0.2},
-            "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.2},
+            "hiera_abs_win_base_plus_448": {"lr": 8e-4,"drop_path": 0.2},
             "hiera_abs_win_base_plus_512": {"lr": 8e-4,"drop_path": 0.2},
-            "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"lr": 8e-4,"drop_path": 0.2},
 
             "vit_base_224": { "lr": 1.5e-4, "drop_path": 0.0},
             "vit_large_224": {"lr": 1.5e-4, "drop_path": 0.0},
@@ -585,27 +580,20 @@ class TrainArgs:
             "hiera_large_224":     { "drop_path": 0.2 },
             "hiera_huge_224":      { "drop_path": 0.3 },
 
-            "hiera_tiny_224_st_moe_0001":          { "drop_path": 0.0 },
-            "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
-            "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
+            "hiera_base_plus_448": { "drop_path": 0.2 },
+
 
             "hiera_tiny_512":                      { "drop_path": 0.1 },
-            "hiera_tiny_512_st_moe_0011_50p":      { "drop_path": 0.1 },
             "hiera_base_plus_512":                 { "drop_path": 0.3 },
-            "hiera_base_plus_512_st_moe_0011_50p": { "drop_path": 0.3 },
 
             "hieradet_tiny_224": {"drop_path": 0.0},
             "hiera_abs_win_tiny_224": {"drop_path": 0.0},
-            "hiera_abs_win_tiny_224_st_moe_0011_50p": {"drop_path": 0.0},
             "hiera_abs_win_tiny_512": {"drop_path": 0.0},
-            "hiera_abs_win_tiny_512_st_moe_0011_50p": {"drop_path": 0.0},
 
 
             "hiera_abs_win_base_plus_224": {"drop_path": 0.2},
-            "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_448": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512": {"drop_path": 0.2},
-            "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"drop_path": 0.2},
 
             "vit_base_224": {"drop_path": 0.1},
             "vit_large_224": {"drop_path": 0.1},
@@ -645,27 +633,19 @@ class TrainArgs:
             "hiera_large_224":     { "drop_path": 0.2 },
             "hiera_huge_224":      { "drop_path": 0.3 },
 
-            "hiera_tiny_224_st_moe_0001":          { "drop_path": 0.0 },
-            "hiera_tiny_224_st_moe_50p":           { "drop_path": 0.0 },
-            "hiera_tiny_224_st_moe_0011_50p":      { "drop_path": 0.0 },
+            "hiera_base_plus_448": { "drop_path": 0.2 },
 
             "hiera_tiny_512":                      { "drop_path": 0.1 },
-            "hiera_tiny_512_st_moe_0011_50p":      { "drop_path": 0.1 },
             "hiera_base_plus_512":                 { "drop_path": 0.3 },
-            "hiera_base_plus_512_st_moe_0011_50p": { "drop_path": 0.3 },
 
             "hieradet_tiny_224": {"drop_path": 0.0},
             "hiera_abs_win_tiny_224": {"drop_path": 0.0},
-            "hiera_abs_win_tiny_224_st_moe_0011_50p": {"drop_path": 0.0},
             "hiera_abs_win_tiny_512": {"drop_path": 0.0},
-            "hiera_abs_win_tiny_512_st_moe_0011_50p": {"drop_path": 0.0},
 
 
             "hiera_abs_win_base_plus_224": {"drop_path": 0.2},
-            "hiera_abs_win_base_plus_224_st_moe_0011_50p": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_448": {"drop_path": 0.2},
             "hiera_abs_win_base_plus_512": {"drop_path": 0.2},
-            "hiera_abs_win_base_plus_512_st_moe_0011_50p": {"drop_path": 0.2},
 
             "vit_base_224": {"drop_path": 0.1},
             "vit_large_224": {"drop_path": 0.1},

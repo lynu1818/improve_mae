@@ -51,7 +51,7 @@ class MaskedAutoencoderPlusViT(nn.Module):
     """ Masked Autoencoder with VisionTransformer backbone
     """
     @has_config
-    def __init__(self, model_name = '', input_size=(224, 224), patch_size=16, in_chans=3,
+    def __init__(self, mask_ratio, model_name = '', input_size=(224, 224), patch_size=16, in_chans=3,
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
                  mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False,
@@ -86,18 +86,24 @@ class MaskedAutoencoderPlusViT(nn.Module):
             Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(decoder_depth)])
 
-        if img_size == 224:
-            self.decoder_upsample_layers = nn.ModuleDict({
-                str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
-            })
-        elif img_size == 448:
-            self.decoder_upsample_layers = nn.ModuleDict({
-                str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
-                str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2)
-
-            })
-        else:
-            raise NotImplementedError(f"Unsupported input size: {img_size}")
+        self.decoder_upsample_layers = None
+        if decoder_depth == 8:
+            if mask_ratio == 0.75:
+                self.decoder_upsample_layers = nn.ModuleDict({
+                    str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
+                })
+            elif mask_ratio == 0.9375:
+                self.decoder_upsample_layers = nn.ModuleDict({
+                    str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
+                    str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2)
+                })
+        elif decoder_depth == 2:
+            if mask_ratio == 0.75:
+                self.decoder_upsample_layers = nn.ModuleDict({
+                    str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2),
+                })
+        if self.decoder_upsample_layers is None:
+            raise ValueError(f"Unsupported mask ratio {mask_ratio} for decoder depth {decoder_depth}")
 
         self.decoder_norm = norm_layer(decoder_embed_dim)
         self.decoder_pred = nn.Linear(decoder_embed_dim, patch_size**2 * in_chans, bias=True) # decoder to patch

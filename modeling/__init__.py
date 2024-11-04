@@ -156,3 +156,10 @@ from .vit_emae_plus import (
     emae_plus_vit_base_448,
     emae_plus_vit_large_448,
 )
+
+from .hiera_abs_win_mae_plus import (
+    mae_plus_hiera_abs_win_tiny_224,
+    mae_plus_hiera_abs_win_tiny_448,
+    mae_plus_hiera_abs_win_base_plus_224,
+    mae_plus_hiera_abs_win_base_plus_448,
+)

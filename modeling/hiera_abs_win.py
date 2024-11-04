@@ -322,6 +322,7 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
     @has_config
     def __init__(
         self,
+        mask_ratio: float,
         model_name: str,
         input_size: Tuple[int, ...] = (224, 224),
         in_chans: int = 3,
@@ -365,6 +366,7 @@ class HieraAbsWin(nn.Module, PyTorchModelHubMixin):
     ):
         super().__init__()
         self.model_name = model_name
+        self.mask_ratio = mask_ratio
 
         self.window_spec = window_spec
         assert len(stages) == len(window_spec)
