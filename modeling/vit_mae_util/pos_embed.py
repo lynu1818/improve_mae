@@ -11,6 +11,30 @@ import numpy as np
 
 import torch
 
+
+# -------------------------------------------
+# Spatial 2D sine-cosine position embedding
+# Since the standard one will loss y information (All value is same along the y-axis)
+def get_spatial_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):
+
+    # Create meshgrid for x and y positions
+    x = np.linspace(0, 2 * np.pi, grid_size)
+    y = np.linspace(0, 2 * np.pi, grid_size)
+    x_grid, y_grid = np.meshgrid(x, y)
+
+    # Initialize positional embedding array
+    pos_embed = np.zeros((grid_size, grid_size, embed_dim))
+
+    # Compute the positional embeddings using sine and cosine functions
+    for i in range(0, embed_dim, 2):
+        pos_embed[:, :, i] = np.sin((i // 2 + 1) * x_grid) + np.sin((i // 2 + 1) * y_grid)
+        if i + 1 < embed_dim:
+            pos_embed[:, :, i + 1] = np.cos((i // 2 + 1) * x_grid) + np.cos((i // 2 + 1) * y_grid)
+    pos_embed = pos_embed.reshape(-1, embed_dim)
+    if cls_token:
+        pos_embed = np.concatenate([np.zeros([1, embed_dim]), pos_embed], axis=0)
+    return pos_embed
+
 # --------------------------------------------------------
 # 2D sine-cosine position embedding
 # References:

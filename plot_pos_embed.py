@@ -13,7 +13,11 @@ args = parser.parse_args()
 
 
 state_dict = torch.load(args.ckpt, map_location='cpu')
-pos_embed = state_dict['state_dict']['model.decoder_pos_embed']
+if 'state_dict' in state_dict:
+    pos_embed = state_dict['state_dict']['model.decoder_pos_embed']
+elif 'model' in state_dict:
+    pos_embed = state_dict['model']['pos_embed']
+
 
 
 pos_embed_ch = []

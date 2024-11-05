@@ -355,6 +355,9 @@ class TrainArgs:
     mask_ratio: float = 0.75
 
     upsample_method: str = "pixel_shuffle" # "token" or "pixel_shuffle"
+    # 'standard_sincos' or 'spatial_sincos' or 'random'. Add 'learnable' at front for learnable positional embeddings.
+    # e.g. 'learnable_spatial_sincos'
+    dec_pos_embed_type: str = 'standard_sincos' 
 
     def make_dataloaders(self, img_size: int):
         train_loader = DataLoader(

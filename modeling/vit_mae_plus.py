@@ -16,7 +16,7 @@ import torch.nn as nn
 
 from timm.models.vision_transformer import PatchEmbed, Block
 
-from .vit_mae_util.pos_embed import get_2d_sincos_pos_embed
+from .vit_mae_util.pos_embed import get_2d_sincos_pos_embed, get_spatial_2d_sincos_pos_embed
 from .hiera_utils import pretrained_model
 from .hfhub import has_config
 
@@ -71,12 +71,19 @@ class MaskedAutoencoderPlusViT(nn.Module):
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
                  mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False,
-                 drop_path_rate: float = 0.0, upsample_method='pixel_shuffle'):
+                 drop_path_rate: float = 0.0, upsample_method='pixel_shuffle', dec_pos_embed_type='standard_sincos'):
         super().__init__()
 
         self.model_name = model_name
         img_size = input_size[0]
         self.input_size = input_size
+        self.dec_pos_embed_type = dec_pos_embed_type
+        print(f"======== configs ==========")
+        print(f"model_name: {model_name}")
+        print(f"mask_ratio: {mask_ratio}")
+        print(f"input_size: {input_size}")
+        print('upsample_method:', upsample_method)
+        print('dec_pos_embed_type:', dec_pos_embed_type)
         # --------------------------------------------------------------------------
         # MAE encoder specifics
         self.patch_embed = PatchEmbed(img_size, patch_size, in_chans, embed_dim)
@@ -96,14 +103,18 @@ class MaskedAutoencoderPlusViT(nn.Module):
         # --------------------------------------------------------------------------
         # MAE decoder specifics
         self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
-        self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=True)  # Learnable pos embedding
+
+        if self.dec_pos_embed_type.find('learnable') >= 0:
+            self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=True)  # Learnable pos embedding
+        else:
+            self.decoder_pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, decoder_embed_dim), requires_grad=False)  # Non-Learnable pos embedding
 
         self.decoder_blocks = nn.ModuleList([
             Block(decoder_embed_dim, decoder_num_heads, mlp_ratio, qkv_bias=True, norm_layer=norm_layer)
             for i in range(decoder_depth)])
 
         self.decoder_upsample_layers = None
-        print(f"======== upsample_method: {upsample_method} ==========")
+        
         if upsample_method == 'token':
             if mask_ratio == 0.75:
                 if img_size == 224:
@@ -147,9 +158,16 @@ class MaskedAutoencoderPlusViT(nn.Module):
         pos_embed = get_2d_sincos_pos_embed(self.pos_embed.shape[-1], int(self.patch_embed.num_patches**.5), cls_token=True)
         self.pos_embed.data.copy_(torch.from_numpy(pos_embed).float().unsqueeze(0))
 
-        #decoder_pos_embed = get_2d_sincos_pos_embed(self.decoder_pos_embed.shape[-1], int(self.patch_embed.num_patches**.5), cls_token=True)
-        #self.decoder_pos_embed.data.copy_(torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
-        nn.init.trunc_normal_(self.decoder_pos_embed, std=0.02)
+        if self.dec_pos_embed_type.find('random') >= 0:
+            nn.init.trunc_normal_(self.decoder_pos_embed, std=0.02)
+        elif self.dec_pos_embed_type.find('spatial_sincos') >= 0:
+            decoder_pos_embed = get_spatial_2d_sincos_pos_embed(self.decoder_pos_embed.shape[-1], int(self.patch_embed.num_patches**.5), cls_token=True)
+            self.decoder_pos_embed.data.copy_(torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
+        elif self.dec_pos_embed_type.find('standard_sincos') >= 0:
+            decoder_pos_embed = get_2d_sincos_pos_embed(self.decoder_pos_embed.shape[-1], int(self.patch_embed.num_patches**.5), cls_token=True)
+            self.decoder_pos_embed.data.copy_(torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
+        else:
+            raise ValueError(f"Unsupported decoder pos embed type {self.dec_pos_embed_type}")
 
         # initialize patch_embed like nn.Linear (instead of nn.Conv2d)
         w = self.patch_embed.proj.weight.data
