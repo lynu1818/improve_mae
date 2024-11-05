@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .vit_mae_util.pos_embed import get_spatial_2d_sincos_pos_embed
 from .hiera import HieraBlock
 from .hiera_abs_win import HieraAbsWin
 from .hiera_utils import pretrained_model, undo_windowing, conv_nd
@@ -66,6 +67,7 @@ class MaskedAutoencoderPlusHieraAbsWin(HieraAbsWin):
         decoder_num_heads: int = 16,
         norm_layer: Union[str, nn.Module] = "LayerNorm",
         upsample_method: str = "token",
+        dec_pos_embed_type: str = "learnable_random",
         **kwdargs,
     ):
         super().__init__(
@@ -75,7 +77,8 @@ class MaskedAutoencoderPlusHieraAbsWin(HieraAbsWin):
             #norm_layer=norm_layer,
             **kwdargs,
         )
-        
+        self.dec_pos_embed_type = dec_pos_embed_type
+
         # Do it this way to ensure that the init args are all PoD (for config usage)
         if isinstance(norm_layer, str):
             norm_layer = partial(getattr(nn, norm_layer), eps=1e-6)
@@ -121,11 +124,11 @@ class MaskedAutoencoderPlusHieraAbsWin(HieraAbsWin):
 
         self.decoder_embed = nn.Linear(encoder_dim_out, decoder_embed_dim)
 
-        self.decoder_pos_embed = nn.Parameter(
-            torch.zeros(
-                1, math.prod(self.tokens_spatial_shape_final), decoder_embed_dim
-            )
-        )
+
+        if self.dec_pos_embed_type.find('learnable') >= 0:
+            self.decoder_pos_embed = nn.Parameter(torch.zeros(1, math.prod(self.tokens_spatial_shape_final), decoder_embed_dim))
+        else:
+            raise ValueError(f"Unsupported decoder pos embed type {self.dec_pos_embed_type}. Hiera should all be learnable")
 
         self.decoder_blocks = nn.ModuleList(
             [
@@ -163,7 +166,13 @@ class MaskedAutoencoderPlusHieraAbsWin(HieraAbsWin):
         self.initialize_weights()
 
     def initialize_weights(self):
-        nn.init.trunc_normal_(self.decoder_pos_embed, std=0.02)
+        if self.dec_pos_embed_type.find('random') >= 0:
+            nn.init.trunc_normal_(self.decoder_pos_embed, std=0.02)
+        elif self.dec_pos_embed_type.find('spatial_sincos') >= 0:
+            decoder_pos_embed = get_spatial_2d_sincos_pos_embed(self.decoder_pos_embed.shape[-1], self.tokens_spatial_shape_final[0], cls_token=False)
+            self.decoder_pos_embed.data.copy_(torch.from_numpy(decoder_pos_embed).float().unsqueeze(0))
+        else:
+            raise ValueError(f"Unsupported decoder pos embed type {self.dec_pos_embed_type}")
         self.apply(self._mae_init_weights)
 
         # initialize patch_embed like nn.Linear (instead of nn.Conv2d)
