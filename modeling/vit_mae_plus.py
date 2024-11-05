@@ -46,6 +46,22 @@ class DecoderUpsampleBlock(nn.Module):
         x = torch.cat([cls_token, x_], dim=1)
         return x
 
+class TokenUpsampleBlock(nn.Module):
+    def __init__(self, dim, input_length, target_length):
+        super().__init__()
+        self.proj = nn.Linear(dim, (target_length // input_length) * dim)
+        self.target_length = target_length
+    
+    def forward(self, x):
+        # remove cls token
+        cls_token = x[:, :1, :]
+        x = x[:, 1:, :]
+        # x shape: [B, L, D]
+        B, L, D = x.shape
+        x = self.proj(x)  # Shape: [B, L, r*D]
+        x = x.view(B, self.target_length, D)  # Reshape to [B, rL, D]
+        x = torch.cat([cls_token, x], dim=1)
+        return x
 
 class MaskedAutoencoderPlusViT(nn.Module):
     """ Masked Autoencoder with VisionTransformer backbone
@@ -55,7 +71,7 @@ class MaskedAutoencoderPlusViT(nn.Module):
                  embed_dim=1024, depth=24, num_heads=16,
                  decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=16,
                  mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False,
-                 drop_path_rate: float = 0.0):
+                 drop_path_rate: float = 0.0, upsample_method='pixel_shuffle'):
         super().__init__()
 
         self.model_name = model_name
@@ -87,21 +103,33 @@ class MaskedAutoencoderPlusViT(nn.Module):
             for i in range(decoder_depth)])
 
         self.decoder_upsample_layers = None
-        if decoder_depth == 8:
+        print(f"======== upsample_method: {upsample_method} ==========")
+        if upsample_method == 'token':
             if mask_ratio == 0.75:
-                self.decoder_upsample_layers = nn.ModuleDict({
-                    str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
-                })
-            elif mask_ratio == 0.9375:
-                self.decoder_upsample_layers = nn.ModuleDict({
-                    str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
-                    str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2)
-                })
-        elif decoder_depth == 2:
-            if mask_ratio == 0.75:
-                self.decoder_upsample_layers = nn.ModuleDict({
-                    str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2),
-                })
+                if img_size == 224:
+                    self.decoder_upsample_layers = nn.ModuleDict({
+                        str(decoder_depth - 2): TokenUpsampleBlock(decoder_embed_dim, 49, 196),
+                    })
+                elif img_size == 448:
+                    self.decoder_upsample_layers = nn.ModuleDict({
+                        str(decoder_depth - 2): TokenUpsampleBlock(decoder_embed_dim, 196, 784),
+                    })
+        elif upsample_method == 'pixel_shuffle':
+            if decoder_depth == 8:
+                if mask_ratio == 0.75:
+                    self.decoder_upsample_layers = nn.ModuleDict({
+                        str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
+                    })
+                elif mask_ratio == 0.9375:
+                    self.decoder_upsample_layers = nn.ModuleDict({
+                        str(decoder_depth - 2): DecoderUpsampleBlock(decoder_embed_dim, 2),
+                        str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2)
+                    })
+            elif decoder_depth == 2:
+                if mask_ratio == 0.75:
+                    self.decoder_upsample_layers = nn.ModuleDict({
+                        str(decoder_depth - 1): DecoderUpsampleBlock(decoder_embed_dim, 2),
+                    })
         if self.decoder_upsample_layers is None:
             raise ValueError(f"Unsupported mask ratio {mask_ratio} for decoder depth {decoder_depth}")
 

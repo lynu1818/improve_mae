@@ -354,7 +354,7 @@ class TrainArgs:
     # For MAE only
     mask_ratio: float = 0.75
 
-
+    upsample_method: str = "pixel_shuffle" # "token" or "pixel_shuffle"
 
     def make_dataloaders(self, img_size: int):
         train_loader = DataLoader(

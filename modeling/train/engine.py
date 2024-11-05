@@ -150,7 +150,6 @@ class MAEEngine(L.LightningModule):
         super().__init__(**kwargs)
 
         self.args = args
-
         self.model = reinit(type(model), model, drop_path_rate=args.drop_path)
         if torch_compile:
             self.model = torch.compile(self.model, mode='reduce-overhead')

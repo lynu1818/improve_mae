@@ -37,28 +37,6 @@ def apply_fusion_head(head: nn.Module, x: torch.Tensor) -> torch.Tensor:
     x = x.permute(permute).reshape(B, num_mask_units, *x.shape[2:], x.shape[1])
     return x
 
-
-# class DecoderUpsampleBlock(nn.Module):
-#     def __init__(self, D, upscale_factor):
-#         super().__init__()
-#         self.upscale_factor = upscale_factor
-#         self.conv = nn.Conv2d(D, D * (upscale_factor ** 2), kernel_size=3, padding=1)
-#         self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
-    
-#     def forward(self, x):
-#         # No cls token
-#         B, N, D = x.shape
-#         H = W = int(N ** .5)
-#         x = x.view(B, H, W, D).permute(0, 3, 1, 2) # B, D, H, W
-#         # Upsample
-#         x = self.conv(x) # B, D * (upscale_factor ** 2), H, W
-#         x = self.pixel_shuffle(x) # B, D, H * upscale_factor, W * upscale_factor
-
-#         # Flatten
-#         x = x.permute(0, 2, 3, 1).reshape(B, -1, D)
-#         return x
-
-
 class TokenUpsampleBlock(nn.Module):
     def __init__(self, dim, input_length, target_length):
         super().__init__()
@@ -87,6 +65,7 @@ class MaskedAutoencoderPlusHieraAbsWin(HieraAbsWin):
         decoder_depth: int = 8,
         decoder_num_heads: int = 16,
         norm_layer: Union[str, nn.Module] = "LayerNorm",
+        upsample_method: str = "token",
         **kwdargs,
     ):
         super().__init__(

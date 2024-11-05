@@ -36,16 +36,20 @@ def train(model_name: str,
 
     torch.set_float32_matmul_precision('medium')
     if "emae_plus" in config_name:
-        model = getattr(modeling, f"emae_plus_{model_name}")(pretrained=False, mask_ratio=args.mask_ratio, model_name=f"emae_plus_{model_name}")
+        model = getattr(modeling, f"emae_plus_{model_name}")(
+            pretrained=False, mask_ratio=args.mask_ratio, model_name=f"emae_plus_{model_name}")
         engine = modeling.train.EMAEEngine(model, args, torch_compile)
     elif "emae" in config_name:
-        model = getattr(modeling, f"emae_{model_name}")(pretrained=False, mask_ratio=args.mask_ratio, model_name=f"emae_{model_name}")
+        model = getattr(modeling, f"emae_{model_name}")(
+            pretrained=False, mask_ratio=args.mask_ratio, model_name=f"emae_{model_name}")
         engine = modeling.train.EMAEEngine(model, args, torch_compile)
     elif "mae_plus" in config_name:
-        model = getattr(modeling, f"mae_plus_{model_name}")(pretrained=False, mask_ratio=args.mask_ratio, model_name=f"mae_plus_{model_name}")
+        model = getattr(modeling, f"mae_plus_{model_name}")(
+            pretrained=False, mask_ratio=args.mask_ratio, model_name=f"mae_plus_{model_name}", upsample_method=args.upsample_method)
         engine = modeling.train.MAEEngine(model, args, torch_compile)
     elif "mae" in config_name:
-        model = getattr(modeling, f"mae_{model_name}")(pretrained=False, mask_ratio=args.mask_ratio, model_name=f"mae_{model_name}")
+        model = getattr(modeling, f"mae_{model_name}")(
+            pretrained=False, mask_ratio=args.mask_ratio, model_name=f"mae_{model_name}")
         engine = modeling.train.MAEEngine(model, args, torch_compile)
     else:
         model = getattr(modeling, model_name)(
